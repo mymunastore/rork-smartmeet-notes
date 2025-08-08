@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SmartMeet Notes",
-    "slug": "smartmeet-notes",
+    "name": "Scribe",
+    "slug": "scribe-notes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.smartmeet-notes",
+      "bundleIdentifier": "app.rork.scribe",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
@@ -30,7 +30,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.smartmeet-notes",
+      "package": "app.rork.scribe",
       "permissions": [
         "RECORD_AUDIO",
         "CAMERA",
