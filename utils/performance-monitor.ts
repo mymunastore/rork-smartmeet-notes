@@ -89,7 +89,7 @@ class PerformanceMonitor {
         return usage;
       }
     } catch (error) {
-      // Memory API not available
+      // Memory API not available - this is expected on mobile
       console.debug('Memory API not available:', error);
     }
     return null;

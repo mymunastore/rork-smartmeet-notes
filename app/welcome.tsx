@@ -127,17 +127,18 @@ export default function WelcomePage() {
       return;
     }
     
-    // For now, navigate to the main app - in a real app this would go to login screen
+    console.log('Login button pressed - navigating to app');
+    
     try {
-      const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
-      if (onboardingCompleted === 'true') {
-        router.push('/(tabs)/notes');
-      } else {
-        router.push('/onboarding');
-      }
+      // Mark onboarding as completed for demo purposes
+      await AsyncStorage.setItem('onboarding_completed', 'true');
+      
+      // Navigate directly to the main app
+      router.replace('/(tabs)/notes');
     } catch (error) {
-      console.log('Error checking onboarding status:', error);
-      router.push('/onboarding');
+      console.log('Error during login navigation:', error);
+      // Fallback navigation
+      router.replace('/(tabs)/notes');
     }
   };
 
@@ -147,17 +148,15 @@ export default function WelcomePage() {
       return;
     }
     
-    // For now, navigate to the main app - in a real app this would go to signup screen
+    console.log('Sign up button pressed - navigating to onboarding');
+    
     try {
-      const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
-      if (onboardingCompleted === 'true') {
-        router.push('/(tabs)/notes');
-      } else {
-        router.push('/onboarding');
-      }
+      // Navigate to onboarding for new users
+      router.replace('/onboarding');
     } catch (error) {
-      console.log('Error checking onboarding status:', error);
-      router.push('/onboarding');
+      console.log('Error during signup navigation:', error);
+      // Fallback navigation
+      router.replace('/onboarding');
     }
   };
 

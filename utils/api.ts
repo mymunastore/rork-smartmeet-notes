@@ -109,22 +109,32 @@ export async function translateText(
   });
 }
 
+// Enhanced transcription with automatic language detection and translation
 export async function transcribeAudio(
   audioUri: string, 
   language?: string,
-  translateToEnglish: boolean = true
+  autoTranslateToEnglish: boolean = true
 ): Promise<{ 
   text: string; 
+  language: string;
   detectedLanguage?: string; 
   confidence?: number;
   originalText?: string;
   translatedText?: string;
   isTranslated?: boolean;
 }> {
-  const cacheKey = `transcription_${audioUri}_${language || 'auto'}`;
+  const cacheKey = `transcription_${audioUri}_${language || 'auto'}_${autoTranslateToEnglish}`;
   
   // Check cache first
-  const cached = await cacheManager.get<{ text: string; detectedLanguage?: string; confidence?: number }>(cacheKey);
+  const cached = await cacheManager.get<{ 
+    text: string; 
+    language: string;
+    detectedLanguage?: string; 
+    confidence?: number;
+    originalText?: string;
+    translatedText?: string;
+    isTranslated?: boolean;
+  }>(cacheKey);
   if (cached) {
     console.log('📦 Using cached transcription');
     return cached;
@@ -134,7 +144,7 @@ export async function transcribeAudio(
     performanceMonitor.startTimer('transcription-api');
     
     try {
-      console.log("🎤 Transcribing audio with language:", language || 'auto-detect');
+      console.log("🎤 Transcribing audio with auto-language detection:", language || 'auto-detect');
       
       const formData = new FormData();
       
@@ -142,7 +152,7 @@ export async function transcribeAudio(
         // For web, fetch the file and append it
         const response = await fetch(audioUri);
         const blob = await response.blob();
-        formData.append("audio", blob);
+        formData.append("audio", blob, 'recording.webm');
       } else {
         // For native platforms
         const uriParts = audioUri.split(".");
@@ -158,15 +168,14 @@ export async function transcribeAudio(
         formData.append("audio", audioFile);
       }
       
-      // Add language parameter if specified
-      if (language && language !== 'auto') {
+      // Only add language parameter if explicitly specified (not auto-detect)
+      if (language && language !== 'auto' && language !== 'auto-detect') {
         formData.append("language", language);
       }
       
       const response = await fetch("https://toolkit.rork.com/stt/transcribe/", {
         method: "POST",
         body: formData,
-        // Add timeout
         signal: AbortSignal.timeout(60000) // 60 second timeout
       });
       
@@ -175,31 +184,35 @@ export async function transcribeAudio(
       }
       
       const data = await response.json();
-      console.log("✅ Transcription completed:", data.text.substring(0, 50) + "...");
+      console.log("✅ Transcription completed:", {
+        text: data.text?.substring(0, 50) + "...",
+        detectedLanguage: data.language
+      });
       
       let result = {
-        text: data.text,
+        text: data.text || '',
+        language: data.language || 'unknown',
         detectedLanguage: data.language,
         confidence: data.confidence || 1.0,
-        originalText: data.text,
+        originalText: data.text || '',
         translatedText: undefined as string | undefined,
         isTranslated: false,
       };
       
-      // If detected language is not English and translation is requested
-      if (translateToEnglish && data.language && data.language !== 'en' && data.text) {
+      // Auto-translate to English if detected language is not English and translation is requested
+      if (autoTranslateToEnglish && data.language && data.language !== 'en' && data.text && data.text.trim()) {
         try {
-          console.log(`🌐 Translating from ${data.language} to English...`);
+          console.log(`🌐 Auto-translating from ${data.language} to English...`);
           const translatedText = await translateText(data.text, data.language, 'en');
           result = {
             ...result,
-            text: translatedText, // Main text is the English translation
+            text: translatedText, // Main text becomes the English translation
             translatedText,
             isTranslated: true,
           };
-          console.log("✅ Translation completed:", translatedText.substring(0, 50) + "...");
+          console.log("✅ Auto-translation completed:", translatedText.substring(0, 50) + "...");
         } catch (translationError) {
-          console.warn("⚠️ Translation failed, using original text:", translationError);
+          console.warn("⚠️ Auto-translation failed, using original text:", translationError);
           // Keep original text if translation fails
         }
       }
