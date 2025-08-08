@@ -1,0 +1,65 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import React, { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { NotesProvider } from "@/hooks/use-notes-store";
+import { UserProfileProvider } from "@/hooks/use-user-profile";
+import { useBackgroundProcessing } from "@/hooks/use-background-processing";
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
+
+function RootLayoutNav() {
+  // Initialize background processing
+  useBackgroundProcessing();
+  
+  return (
+    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen 
+        name="onboarding" 
+        options={{ 
+          headerShown: false,
+          gestureEnabled: false,
+        }} 
+      />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen 
+        name="note/[id]" 
+        options={{ 
+          title: "Note Details",
+          headerTintColor: "#4A6FFF",
+        }} 
+      />
+      <Stack.Screen 
+        name="recording" 
+        options={{ 
+          title: "Recording",
+          headerTintColor: "#4A6FFF",
+          presentation: "modal",
+        }} 
+      />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <UserProfileProvider>
+        <NotesProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <RootLayoutNav />
+          </GestureHandlerRootView>
+        </NotesProvider>
+      </UserProfileProvider>
+    </QueryClientProvider>
+  );
+}
