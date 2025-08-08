@@ -62,19 +62,26 @@ class BackgroundProcessor {
         throw new Error("No recording URI found");
       }
       
-      // Step 1: Transcribe the audio
+      // Step 1: Transcribe the audio with automatic translation
       console.log(`Transcribing audio for note: ${note.id}`);
       performanceMonitor.startTimer(`transcription-${note.id}`);
-      const transcriptionResult = await transcribeAudio(note.recordingUri, language);
+      const transcriptionResult = await transcribeAudio(
+        note.recordingUri, 
+        language, 
+        true // Enable automatic translation to English
+      );
       performanceMonitor.endTimer(`transcription-${note.id}`);
       
-      // Update note with transcript and language info
+      // Update note with transcript, translation, and language info
       const noteWithTranscript = {
         ...note,
-        transcript: transcriptionResult.text,
+        transcript: transcriptionResult.text, // This will be English if translated
         detectedLanguage: transcriptionResult.detectedLanguage,
         confidence: transcriptionResult.confidence,
         language: language || transcriptionResult.detectedLanguage || 'en',
+        originalText: transcriptionResult.originalText,
+        translatedText: transcriptionResult.translatedText,
+        isTranslated: transcriptionResult.isTranslated,
       };
       await updateNoteFn(noteWithTranscript);
       console.log(`Transcription completed for note: ${note.id}`);

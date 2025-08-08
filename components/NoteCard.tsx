@@ -1,9 +1,10 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { FileText, Star, Clock, AlertCircle } from "lucide-react-native";
+import { FileText, Star, Clock, AlertCircle, Languages } from "lucide-react-native";
 import React, { memo, useCallback, useMemo } from "react";
 import Colors from "@/constants/colors";
 import { Note } from "@/types/note";
+import { SUPPORTED_LANGUAGES } from "@/constants/languages";
 
 interface NoteCardProps {
   note: Note;
@@ -89,6 +90,15 @@ const NoteCard = memo(function NoteCard({ note }: NoteCardProps) {
           {note.tags.length > 0 && (
             <View style={styles.tagsContainer}>
               <Text style={styles.tagCount}>+{note.tags.length}</Text>
+            </View>
+          )}
+          {/* Translation indicator */}
+          {note.isTranslated && note.detectedLanguage && (
+            <View style={styles.translationIndicator}>
+              <Languages size={10} color={Colors.light.nature.sage} />
+              <Text style={styles.translationText}>
+                {SUPPORTED_LANGUAGES.find(lang => lang.code === note.detectedLanguage)?.name || note.detectedLanguage.toUpperCase()}
+              </Text>
             </View>
           )}
         </View>
@@ -233,5 +243,20 @@ const styles = StyleSheet.create({
     color: Colors.light.error,
     fontStyle: 'italic',
     marginTop: 4,
+  },
+  translationIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.nature.sage,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 2,
+    marginLeft: 8,
+  },
+  translationText: {
+    fontSize: 9,
+    color: '#fff',
+    fontWeight: '600',
   },
 });

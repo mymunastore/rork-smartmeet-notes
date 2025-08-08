@@ -15,6 +15,7 @@ import { Play, Pause, Share2, Trash2 } from "lucide-react-native";
 
 import Colors from "@/constants/colors";
 import { useNotes } from "@/hooks/use-notes-store";
+import TranslationView from "@/components/TranslationView";
 
 export default function NoteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -179,9 +180,22 @@ export default function NoteDetailScreen() {
         </View>
       ) : (
         <>
+          {/* Translation View - Show if translated */}
+          {note.isTranslated && (
+            <View style={styles.section}>
+              <TranslationView
+                originalText={note.originalText}
+                translatedText={note.translatedText}
+                detectedLanguage={note.detectedLanguage}
+                isTranslated={note.isTranslated}
+                confidence={note.confidence}
+              />
+            </View>
+          )}
+          
           {note.summary && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Summary</Text>
+              <Text style={styles.sectionTitle}>📋 Summary</Text>
               <View style={styles.card}>
                 <Text style={styles.summaryText}>{note.summary}</Text>
               </View>
@@ -190,7 +204,9 @@ export default function NoteDetailScreen() {
           
           {note.transcript && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Transcript</Text>
+              <Text style={styles.sectionTitle}>
+                📝 {note.isTranslated ? 'English Transcript' : 'Transcript'}
+              </Text>
               <View style={styles.card}>
                 <Text style={styles.transcriptText}>{note.transcript}</Text>
               </View>

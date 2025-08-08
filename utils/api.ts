@@ -46,10 +46,81 @@ async function withRetry<T>(
   throw lastError!;
 }
 
+// Translation function using AI API
+export async function translateText(
+  text: string,
+  fromLanguage: string,
+  toLanguage: string = 'en'
+): Promise<string> {
+  const cacheKey = `translation_${btoa(text).slice(0, 32)}_${fromLanguage}_${toLanguage}`;
+  
+  // Check cache first
+  const cached = await cacheManager.get<string>(cacheKey);
+  if (cached) {
+    console.log('📦 Using cached translation');
+    return cached;
+  }
+  
+  return withRetry(async () => {
+    performanceMonitor.startTimer('translation-api');
+    
+    try {
+      console.log(`🌐 Translating from ${fromLanguage} to ${toLanguage}`);
+      
+      const messages = [
+        {
+          role: "system",
+          content: `You are a professional translator. Translate the following text from ${fromLanguage} to ${toLanguage}. Maintain the original meaning, tone, and context. Only return the translated text, no explanations or additional content.`
+        },
+        {
+          role: "user",
+          content: text
+        }
+      ];
+      
+      const response = await fetch("https://toolkit.rork.com/text/llm/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages }),
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Translation failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const translatedText = data.completion.trim();
+      
+      console.log("✅ Translation completed:", translatedText.substring(0, 50) + "...");
+      
+      // Cache the result for 24 hours
+      await cacheManager.set(cacheKey, translatedText, { 
+        ttl: 24 * 60 * 60 * 1000,
+        persistToDisk: true 
+      });
+      
+      return translatedText;
+    } finally {
+      performanceMonitor.endTimer('translation-api');
+    }
+  });
+}
+
 export async function transcribeAudio(
   audioUri: string, 
-  language?: string
-): Promise<{ text: string; detectedLanguage?: string; confidence?: number }> {
+  language?: string,
+  translateToEnglish: boolean = true
+): Promise<{ 
+  text: string; 
+  detectedLanguage?: string; 
+  confidence?: number;
+  originalText?: string;
+  translatedText?: string;
+  isTranslated?: boolean;
+}> {
   const cacheKey = `transcription_${audioUri}_${language || 'auto'}`;
   
   // Check cache first
@@ -106,11 +177,32 @@ export async function transcribeAudio(
       const data = await response.json();
       console.log("✅ Transcription completed:", data.text.substring(0, 50) + "...");
       
-      const result = {
+      let result = {
         text: data.text,
         detectedLanguage: data.language,
         confidence: data.confidence || 1.0,
+        originalText: data.text,
+        translatedText: undefined as string | undefined,
+        isTranslated: false,
       };
+      
+      // If detected language is not English and translation is requested
+      if (translateToEnglish && data.language && data.language !== 'en' && data.text) {
+        try {
+          console.log(`🌐 Translating from ${data.language} to English...`);
+          const translatedText = await translateText(data.text, data.language, 'en');
+          result = {
+            ...result,
+            text: translatedText, // Main text is the English translation
+            translatedText,
+            isTranslated: true,
+          };
+          console.log("✅ Translation completed:", translatedText.substring(0, 50) + "...");
+        } catch (translationError) {
+          console.warn("⚠️ Translation failed, using original text:", translationError);
+          // Keep original text if translation fails
+        }
+      }
       
       // Cache the result for 1 hour
       await cacheManager.set(cacheKey, result, { 

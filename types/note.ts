@@ -21,6 +21,10 @@ export interface Note {
   meetingType?: 'meeting' | 'call' | 'interview' | 'lecture' | 'other';
   priority?: 'low' | 'medium' | 'high';
   isStarred: boolean;
+  // Translation fields
+  originalText?: string;
+  translatedText?: string;
+  isTranslated?: boolean;
 }
 
 export interface Project {

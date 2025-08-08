@@ -1,21 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
-import { Mic, MicOff } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { Mic, MicOff, Globe, Languages } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { translateText } from '@/utils/api';
+import { SUPPORTED_LANGUAGES } from '@/constants/languages';
 
 interface RealTimeTranscriptionProps {
   isRecording: boolean;
   onTranscriptUpdate: (transcript: string) => void;
+  autoTranslateToEnglish?: boolean;
 }
 
 const RealTimeTranscription: React.FC<RealTimeTranscriptionProps> = ({
   isRecording,
   onTranscriptUpdate,
+  autoTranslateToEnglish = true,
 }) => {
   const [transcript, setTranscript] = useState<string>('');
+  const [originalTranscript, setOriginalTranscript] = useState<string>('');
+  const [translatedTranscript, setTranslatedTranscript] = useState<string>('');
   const [isListening, setIsListening] = useState<boolean>(false);
+  const [detectedLanguage, setDetectedLanguage] = useState<string>('en');
+  const [isTranslated, setIsTranslated] = useState<boolean>(false);
+  const [showOriginal, setShowOriginal] = useState<boolean>(false);
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const recognitionRef = useRef<any>(null);
+  const translationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web' && 'webkitSpeechRecognition' in window) {
@@ -24,9 +35,9 @@ const RealTimeTranscription: React.FC<RealTimeTranscriptionProps> = ({
       
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.lang = 'auto'; // Auto-detect language
       
-      recognitionRef.current.onresult = (event: any) => {
+      recognitionRef.current.onresult = async (event: any) => {
         let finalTranscript = '';
         let interimTranscript = '';
         
@@ -39,9 +50,43 @@ const RealTimeTranscription: React.FC<RealTimeTranscriptionProps> = ({
           }
         }
         
-        const fullTranscript = transcript + finalTranscript + interimTranscript;
-        setTranscript(fullTranscript);
-        onTranscriptUpdate(fullTranscript);
+        const fullTranscript = originalTranscript + finalTranscript + interimTranscript;
+        setOriginalTranscript(fullTranscript);
+        
+        // Detect language from the speech recognition result
+        if (event.results[0] && event.results[0][0].lang) {
+          const detectedLang = event.results[0][0].lang.split('-')[0]; // Get language code
+          setDetectedLanguage(detectedLang);
+        }
+        
+        // Auto-translate if enabled and language is not English
+        if (autoTranslateToEnglish && finalTranscript && detectedLanguage !== 'en') {
+          // Clear previous timeout
+          if (translationTimeoutRef.current) {
+            clearTimeout(translationTimeoutRef.current);
+          }
+          
+          // Debounce translation to avoid too many API calls
+          translationTimeoutRef.current = setTimeout(async () => {
+            try {
+              setIsTranslating(true);
+              const translated = await translateText(fullTranscript, detectedLanguage, 'en');
+              setTranslatedTranscript(translated);
+              setIsTranslated(true);
+              setTranscript(translated); // Show translated version by default
+              onTranscriptUpdate(translated);
+            } catch (error) {
+              console.error('Real-time translation failed:', error);
+              setTranscript(fullTranscript); // Fallback to original
+              onTranscriptUpdate(fullTranscript);
+            } finally {
+              setIsTranslating(false);
+            }
+          }, 2000); // Wait 2 seconds after user stops speaking
+        } else {
+          setTranscript(fullTranscript);
+          onTranscriptUpdate(fullTranscript);
+        }
         
         // Auto-scroll to bottom
         setTimeout(() => {
@@ -74,8 +119,11 @@ const RealTimeTranscription: React.FC<RealTimeTranscriptionProps> = ({
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      if (translationTimeoutRef.current) {
+        clearTimeout(translationTimeoutRef.current);
+      }
     };
-  }, []);
+  }, [autoTranslateToEnglish, detectedLanguage, originalTranscript, onTranscriptUpdate]);
 
   useEffect(() => {
     if (Platform.OS === 'web' && recognitionRef.current) {
@@ -102,6 +150,18 @@ const RealTimeTranscription: React.FC<RealTimeTranscriptionProps> = ({
       .replace(/\s+/g, ' ') // Normalize spaces
       .trim();
   };
+  
+  const getLanguageName = (code: string) => {
+    const language = SUPPORTED_LANGUAGES.find(lang => lang.code === code);
+    return language ? language.name : code.toUpperCase();
+  };
+  
+  const toggleTranscriptView = () => {
+    if (isTranslated) {
+      setShowOriginal(!showOriginal);
+      setTranscript(showOriginal ? translatedTranscript : originalTranscript);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -115,10 +175,41 @@ const RealTimeTranscription: React.FC<RealTimeTranscriptionProps> = ({
           <Text style={[styles.statusText, isListening && styles.listeningText]}>
             {isListening ? 'Listening...' : 'Not listening'}
           </Text>
+          
+          {/* Language Detection Indicator */}
+          {detectedLanguage && detectedLanguage !== 'en' && (
+            <View style={styles.languageIndicator}>
+              <Globe size={12} color={Colors.light.nature.sage} />
+              <Text style={styles.languageText}>{getLanguageName(detectedLanguage)}</Text>
+            </View>
+          )}
+          
+          {/* Translation Status */}
+          {isTranslating && (
+            <View style={styles.translatingIndicator}>
+              <Languages size={12} color={Colors.light.nature.coral} />
+              <Text style={styles.translatingText}>Translating...</Text>
+            </View>
+          )}
         </View>
-        <Text style={styles.wordCount}>
-          {transcript.split(' ').filter(word => word.length > 0).length} words
-        </Text>
+        
+        <View style={styles.rightHeader}>
+          <Text style={styles.wordCount}>
+            {transcript.split(' ').filter(word => word.length > 0).length} words
+          </Text>
+          
+          {/* Toggle between original and translated */}
+          {isTranslated && (
+            <TouchableOpacity 
+              style={styles.toggleButton}
+              onPress={toggleTranscriptView}
+            >
+              <Text style={styles.toggleButtonText}>
+                {showOriginal ? 'EN' : getLanguageName(detectedLanguage).slice(0, 2).toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       
       <ScrollView
@@ -128,14 +219,24 @@ const RealTimeTranscription: React.FC<RealTimeTranscriptionProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.transcript}>
-          {formatTranscript(transcript)}
+          {formatTranscript(showOriginal ? originalTranscript : transcript)}
         </Text>
+        
+        {/* Show translation status */}
+        {isTranslated && !showOriginal && (
+          <View style={styles.translationBadge}>
+            <Languages size={12} color={Colors.light.nature.sage} />
+            <Text style={styles.translationBadgeText}>
+              Translated from {getLanguageName(detectedLanguage)}
+            </Text>
+          </View>
+        )}
       </ScrollView>
       
       {Platform.OS !== 'web' && (
         <View style={styles.webOnlyNotice}>
           <Text style={styles.webOnlyText}>
-            Real-time transcription is available on web only
+            Real-time transcription with auto-translation is available on web only
           </Text>
         </View>
       )}
@@ -163,6 +264,9 @@ const styles = StyleSheet.create({
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   statusText: {
     fontSize: 14,
@@ -173,9 +277,71 @@ const styles = StyleSheet.create({
   listeningText: {
     color: Colors.light.nature.ocean,
   },
+  rightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   wordCount: {
     fontSize: 12,
     color: Colors.light.gray[500],
+    fontWeight: '500',
+  },
+  languageIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.nature.sage,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 4,
+  },
+  languageText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  translatingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.nature.coral,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 4,
+  },
+  translatingText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  toggleButton: {
+    backgroundColor: Colors.light.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  toggleButtonText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  translationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.nature.sky,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  translationBadgeText: {
+    fontSize: 11,
+    color: Colors.light.text,
     fontWeight: '500',
   },
   transcriptContainer: {

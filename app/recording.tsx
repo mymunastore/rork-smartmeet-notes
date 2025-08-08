@@ -14,11 +14,12 @@ import {
 import { useRouter } from "expo-router";
 import { TouchableOpacity } from "react-native-gesture-handler";
 
-import { Waves, Settings, Tag, Folder, Star } from "lucide-react-native";
+import { Waves, Settings, Tag, Folder, Star, Languages } from "lucide-react-native";
 
 import Colors from "@/constants/colors";
 import RecordButton from "@/components/RecordButton";
 import RealTimeTranscription from "@/components/RealTimeTranscription";
+import LanguageSettings from "@/components/LanguageSettings";
 import { useNotes } from "@/hooks/use-notes-store";
 import audioRecorder from "@/utils/audio-recorder";
 import backgroundProcessor from "@/utils/background-processor";
@@ -39,6 +40,13 @@ export default function RecordingScreen() {
   const [meetingType, setMeetingType] = useState<'meeting' | 'call' | 'interview' | 'lecture' | 'other'>('meeting');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [isStarred, setIsStarred] = useState<boolean>(false);
+  const [showLanguageSettings, setShowLanguageSettings] = useState<boolean>(false);
+  const [languageSettings, setLanguageSettings] = useState({
+    autoDetectLanguage: true,
+    defaultLanguage: 'auto',
+    autoTranslateToEnglish: true,
+    enableRealTimeTranscription: true,
+  });
   
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -235,13 +243,22 @@ export default function RecordingScreen() {
           <Text style={styles.title}>
             {isRecording ? "🎙️ Recording in progress..." : "🌿 New Recording"}
           </Text>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={() => setShowSettings(true)}
-            disabled={isRecording}
-          >
-            <Settings size={20} color={Colors.light.gray[600]} />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => setShowLanguageSettings(true)}
+              disabled={isRecording}
+            >
+              <Languages size={18} color={Colors.light.nature.sage} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => setShowSettings(true)}
+              disabled={isRecording}
+            >
+              <Settings size={18} color={Colors.light.gray[600]} />
+            </TouchableOpacity>
+          </View>
         </View>
         {isRecording && (
           <View style={styles.recordingIndicator}>
@@ -306,10 +323,13 @@ export default function RecordingScreen() {
       </View>
       
       {/* Real-time transcription */}
-      <RealTimeTranscription 
-        isRecording={isRecording}
-        onTranscriptUpdate={setRealTimeTranscript}
-      />
+      {languageSettings.enableRealTimeTranscription && (
+        <RealTimeTranscription 
+          isRecording={isRecording}
+          onTranscriptUpdate={setRealTimeTranscript}
+          autoTranslateToEnglish={languageSettings.autoTranslateToEnglish}
+        />
+      )}
       
       <View style={styles.controlsContainer}>
         <RecordButton isRecording={isRecording} onPress={handleRecordPress} />
@@ -485,6 +505,14 @@ export default function RecordingScreen() {
           </ScrollView>
         </View>
       </Modal>
+      
+      {/* Language Settings Modal */}
+      <LanguageSettings
+        visible={showLanguageSettings}
+        onClose={() => setShowLanguageSettings(false)}
+        currentSettings={languageSettings}
+        onSettingsChange={setLanguageSettings}
+      />
     </ScrollView>
   );
 }
@@ -506,7 +534,11 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 8,
   },
-  settingsButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerButton: {
     padding: 8,
     borderRadius: 8,
     backgroundColor: Colors.light.card,
