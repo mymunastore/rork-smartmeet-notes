@@ -170,6 +170,16 @@ export default function HomePage() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+            <View style={styles.headerLeft}>
+              {/* Empty space for balance */}
+            </View>
+            <View style={styles.headerLogo}>
+              <View style={styles.headerLogoWrapper}>
+                <Sparkles color="#FFFFFF" size={20} style={styles.headerLogoIcon} />
+                <Text style={styles.headerLogoText}>SCRIBE AI</Text>
+                <Zap color="#FFD700" size={16} style={styles.headerLogoAccent} />
+              </View>
+            </View>
             <View style={styles.authButtons}>
               <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
                 <Text style={styles.loginButtonText}>Login</Text>
@@ -188,12 +198,7 @@ export default function HomePage() {
               transform: [{ translateY: slideAnim }]
             }
           ]}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoWrapper}>
-                <Sparkles color="#FFFFFF" size={24} style={styles.logoIcon} />
-                <Text style={styles.logo}>SCRIBE AI</Text>
-                <Zap color="#FFD700" size={20} style={styles.logoAccent} />
-              </View>
+            <View style={styles.heroLogoContainer}>
               <View style={styles.aiPoweredBadge}>
                 <Globe color="#FFFFFF" size={12} />
                 <Text style={styles.aiPoweredText}>AI Powered</Text>
@@ -405,14 +410,44 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerLogo: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerLogoWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerLogoText: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginHorizontal: 6,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  headerLogoIcon: {
+    marginRight: 3,
+  },
+  headerLogoAccent: {
+    marginLeft: 3,
   },
   authButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
+    flex: 1,
   },
   loginButton: {
     paddingHorizontal: 20,
@@ -443,29 +478,9 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
     alignItems: 'center',
   },
-  logoContainer: {
+  heroLogoContainer: {
     alignItems: 'center',
     marginBottom: 32,
-  },
-  logoWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  logo: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    marginHorizontal: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  logoIcon: {
-    marginRight: 4,
-  },
-  logoAccent: {
-    marginLeft: 4,
   },
   aiPoweredBadge: {
     flexDirection: 'row',
