@@ -121,14 +121,44 @@ export default function WelcomePage() {
     }
   };
 
-  const handleLogin = () => {
-    // TODO: Navigate to login screen when implemented
-    console.log('Login pressed');
+  const handleLogin = async () => {
+    if (!disclaimerAccepted) {
+      setShowDisclaimer(true);
+      return;
+    }
+    
+    // For now, navigate to the main app - in a real app this would go to login screen
+    try {
+      const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
+      if (onboardingCompleted === 'true') {
+        router.push('/(tabs)/notes');
+      } else {
+        router.push('/onboarding');
+      }
+    } catch (error) {
+      console.log('Error checking onboarding status:', error);
+      router.push('/onboarding');
+    }
   };
 
-  const handleSignUp = () => {
-    // TODO: Navigate to sign up screen when implemented
-    console.log('Sign up pressed');
+  const handleSignUp = async () => {
+    if (!disclaimerAccepted) {
+      setShowDisclaimer(true);
+      return;
+    }
+    
+    // For now, navigate to the main app - in a real app this would go to signup screen
+    try {
+      const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
+      if (onboardingCompleted === 'true') {
+        router.push('/(tabs)/notes');
+      } else {
+        router.push('/onboarding');
+      }
+    } catch (error) {
+      console.log('Error checking onboarding status:', error);
+      router.push('/onboarding');
+    }
   };
 
   const renderFeature = (feature: Feature, index: number) => (
@@ -170,9 +200,6 @@ export default function WelcomePage() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-            <View style={styles.headerLeft}>
-              {/* Empty space for balance */}
-            </View>
             <View style={styles.headerLogo}>
               <View style={styles.headerLogoWrapper}>
                 <Sparkles color="#FFFFFF" size={20} style={styles.headerLogoIcon} />
@@ -417,12 +444,8 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 20,
   },
-  headerLeft: {
-    flex: 1,
-  },
   headerLogo: {
-    flex: 1,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   headerLogoWrapper: {
     flexDirection: 'row',
@@ -447,7 +470,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
-    flex: 1,
   },
   loginButton: {
     paddingHorizontal: 20,
