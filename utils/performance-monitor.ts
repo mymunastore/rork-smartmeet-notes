@@ -70,8 +70,10 @@ class PerformanceMonitor {
     if (!this.isEnabled) return null;
     
     try {
-      const perf = performance as PerformanceWithMemory;
-      if (typeof performance !== 'undefined' && perf.memory) {
+      // Memory API is only available in Chrome and some browsers
+      // It's not part of the standard Performance interface
+      const perf = performance as unknown as PerformanceWithMemory;
+      if (typeof performance !== 'undefined' && perf.memory && typeof perf.memory.usedJSHeapSize === 'number') {
         const memory = perf.memory;
         const usage: MemoryUsage = {
           used: memory.usedJSHeapSize,
@@ -86,8 +88,9 @@ class PerformanceMonitor {
         
         return usage;
       }
-    } catch {
+    } catch (error) {
       // Memory API not available
+      console.debug('Memory API not available:', error);
     }
     return null;
   }
