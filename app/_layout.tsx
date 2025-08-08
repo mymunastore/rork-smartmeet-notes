@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { NotesProvider } from "@/hooks/use-notes-store";
 import { UserProfileProvider } from "@/hooks/use-user-profile";
 import { useBackgroundProcessing } from "@/hooks/use-background-processing";
+import { trpc, trpcClient } from "@/lib/trpc";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -52,14 +53,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <UserProfileProvider>
-        <NotesProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <RootLayoutNav />
-          </GestureHandlerRootView>
-        </NotesProvider>
-      </UserProfileProvider>
-    </QueryClientProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <UserProfileProvider>
+          <NotesProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <RootLayoutNav />
+            </GestureHandlerRootView>
+          </NotesProvider>
+        </UserProfileProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
