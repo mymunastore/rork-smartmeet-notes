@@ -4,6 +4,15 @@ interface MemoryUsage {
   percentage: number;
 }
 
+// Extend Performance interface to include memory property
+interface PerformanceWithMemory extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
 interface PerformanceMetric {
   average: number;
   count: number;
@@ -61,9 +70,9 @@ class PerformanceMonitor {
     if (!this.isEnabled) return null;
     
     try {
-      // @ts-ignore - performance.memory is available in some environments
-      if (typeof performance !== 'undefined' && performance.memory) {
-        const memory = performance.memory;
+      const perf = performance as PerformanceWithMemory;
+      if (typeof performance !== 'undefined' && perf.memory) {
+        const memory = perf.memory;
         const usage: MemoryUsage = {
           used: memory.usedJSHeapSize,
           total: memory.totalJSHeapSize,
