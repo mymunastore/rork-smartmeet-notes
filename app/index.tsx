@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   Modal,
   SafeAreaView,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Mic, Brain, FileText, Shield, CheckCircle, X } from 'lucide-react-native';
+import { Mic, Brain, FileText, Shield, CheckCircle, X, Sparkles, Zap, Globe } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '@/constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -24,22 +26,22 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    icon: <Mic color={Colors.light.primary} size={32} />,
+    icon: <Mic color="#FFFFFF" size={28} />,
     title: 'Meeting Recording',
     description: 'Record meetings and calls with crystal clear audio quality'
   },
   {
-    icon: <FileText color={Colors.light.nature.ocean} size={32} />,
+    icon: <FileText color="#FFFFFF" size={28} />,
     title: 'Smart Transcription',
     description: 'Accurate speech-to-text conversion in multiple languages'
   },
   {
-    icon: <Brain color={Colors.light.nature.coral} size={32} />,
+    icon: <Brain color="#FFFFFF" size={28} />,
     title: 'AI Summaries',
     description: 'Get intelligent summaries and key insights from your recordings'
   },
   {
-    icon: <Shield color={Colors.light.nature.sage} size={32} />,
+    icon: <Shield color="#FFFFFF" size={28} />,
     title: 'Secure & Private',
     description: 'All data stored locally on your device with encryption'
   },
@@ -49,9 +51,25 @@ export default function HomePage() {
   const router = useRouter();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
     checkDisclaimerStatus();
+    
+    // Start animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   const checkDisclaimerStatus = async () => {
@@ -115,95 +133,147 @@ export default function HomePage() {
 
   const renderFeature = (feature: Feature, index: number) => (
     <View key={index} style={styles.featureCard}>
-      <View style={styles.featureIcon}>
-        {feature.icon}
-      </View>
-      <Text style={styles.featureTitle}>{feature.title}</Text>
-      <Text style={styles.featureDescription}>{feature.description}</Text>
+      <LinearGradient
+        colors={index % 2 === 0 ? ['#667eea', '#764ba2'] : ['#f093fb', '#f5576c']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.featureGradient}
+      >
+        <View style={styles.featureIcon}>
+          {feature.icon}
+        </View>
+        <Text style={styles.featureTitle}>{feature.title}</Text>
+        <Text style={styles.featureDescription}>{feature.description}</Text>
+      </LinearGradient>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.authButtons}>
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <Text style={styles.loginButtonText}>Login</Text>
+    <View style={styles.container}>
+      {/* Animated Background */}
+      <View style={styles.backgroundContainer}>
+        <LinearGradient
+          colors={['#667eea', '#764ba2', '#f093fb']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        />
+        <View style={styles.floatingShapes}>
+          <View style={[styles.shape, styles.shape1]} />
+          <View style={[styles.shape, styles.shape2]} />
+          <View style={[styles.shape, styles.shape3]} />
+          <View style={[styles.shape, styles.shape4]} />
+        </View>
+      </View>
+
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+            <View style={styles.authButtons}>
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+                <Text style={styles.loginButtonText}>Login</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
+                <Text style={styles.signUpButtonText}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
+          {/* Hero Section */}
+          <Animated.View style={[
+            styles.heroSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoWrapper}>
+                <Sparkles color="#FFFFFF" size={24} style={styles.logoIcon} />
+                <Text style={styles.logo}>SCRIBE AI</Text>
+                <Zap color="#FFD700" size={20} style={styles.logoAccent} />
+              </View>
+              <View style={styles.aiPoweredBadge}>
+                <Globe color="#FFFFFF" size={12} />
+                <Text style={styles.aiPoweredText}>AI Powered</Text>
+              </View>
+            </View>
+            
+            <Text style={styles.heroTitle}>
+              Transform Your Meetings Into{' '}
+              <Text style={styles.heroTitleAccent}>Actionable Insights</Text>
+            </Text>
+            
+            <Text style={styles.heroSubtitle}>
+              Record, transcribe, and summarize your meetings and calls with the power of AI. 
+              Never miss important details again.
+            </Text>
+
+            <TouchableOpacity style={styles.ctaButton} onPress={handleGetStarted}>
+              <LinearGradient
+                colors={['#FF6B6B', '#4ECDC4']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.ctaGradient}
+              >
+                <Text style={styles.ctaButtonText}>Get Started Free</Text>
+                <Sparkles color="#FFFFFF" size={16} style={styles.ctaIcon} />
+              </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
-              <Text style={styles.signUpButtonText}>Sign Up</Text>
+          </Animated.View>
+
+          {/* Features Section */}
+          <View style={styles.featuresSection}>
+            <Text style={styles.sectionTitle}>Why Choose Scribe AI?</Text>
+            <View style={styles.featuresGrid}>
+              {features.map(renderFeature)}
+            </View>
+          </View>
+
+          {/* Benefits Section */}
+          <View style={styles.benefitsSection}>
+            <Text style={styles.sectionTitle}>Key Benefits</Text>
+            <View style={styles.benefitsList}>
+              <View style={styles.benefitItem}>
+                <CheckCircle color={"#4ECDC4"} size={20} />
+                <Text style={styles.benefitText}>Save hours of manual note-taking</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <CheckCircle color={"#4ECDC4"} size={20} />
+                <Text style={styles.benefitText}>Never miss important action items</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <CheckCircle color={"#4ECDC4"} size={20} />
+                <Text style={styles.benefitText}>Searchable meeting history</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <CheckCircle color={"#4ECDC4"} size={20} />
+                <Text style={styles.benefitText}>Multi-language support</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Footer CTA */}
+          <View style={styles.footerCta}>
+            <Text style={styles.footerCtaTitle}>Ready to Get Started?</Text>
+            <Text style={styles.footerCtaSubtitle}>
+              Join thousands of professionals who trust Scribe AI for their meeting needs.
+            </Text>
+            <TouchableOpacity style={styles.ctaButton} onPress={handleGetStarted}>
+              <LinearGradient
+                colors={['#FF6B6B', '#4ECDC4']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.ctaGradient}
+              >
+                <Text style={styles.ctaButtonText}>Start Recording Now</Text>
+                <Sparkles color="#FFFFFF" size={16} style={styles.ctaIcon} />
+              </LinearGradient>
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logo}>🌿 SCRIBE</Text>
-            <View style={styles.aiPoweredBadge}>
-              <Text style={styles.aiPoweredText}>AI Powered</Text>
-            </View>
-          </View>
-          
-          <Text style={styles.heroTitle}>
-            Transform Your Meetings Into{' '}
-            <Text style={styles.heroTitleAccent}>Actionable Insights</Text>
-          </Text>
-          
-          <Text style={styles.heroSubtitle}>
-            Record, transcribe, and summarize your meetings and calls with the power of AI. 
-            Never miss important details again.
-          </Text>
-
-          <TouchableOpacity style={styles.ctaButton} onPress={handleGetStarted}>
-            <Text style={styles.ctaButtonText}>Get Started Free</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Features Section */}
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionTitle}>Why Choose Scribe AI?</Text>
-          <View style={styles.featuresGrid}>
-            {features.map(renderFeature)}
-          </View>
-        </View>
-
-        {/* Benefits Section */}
-        <View style={styles.benefitsSection}>
-          <Text style={styles.sectionTitle}>Key Benefits</Text>
-          <View style={styles.benefitsList}>
-            <View style={styles.benefitItem}>
-              <CheckCircle color={Colors.light.success} size={20} />
-              <Text style={styles.benefitText}>Save hours of manual note-taking</Text>
-            </View>
-            <View style={styles.benefitItem}>
-              <CheckCircle color={Colors.light.success} size={20} />
-              <Text style={styles.benefitText}>Never miss important action items</Text>
-            </View>
-            <View style={styles.benefitItem}>
-              <CheckCircle color={Colors.light.success} size={20} />
-              <Text style={styles.benefitText}>Searchable meeting history</Text>
-            </View>
-            <View style={styles.benefitItem}>
-              <CheckCircle color={Colors.light.success} size={20} />
-              <Text style={styles.benefitText}>Multi-language support</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Footer CTA */}
-        <View style={styles.footerCta}>
-          <Text style={styles.footerCtaTitle}>Ready to Get Started?</Text>
-          <Text style={styles.footerCtaSubtitle}>
-            Join thousands of professionals who trust Scribe AI for their meeting needs.
-          </Text>
-          <TouchableOpacity style={styles.ctaButton} onPress={handleGetStarted}>
-            <Text style={styles.ctaButtonText}>Start Recording Now</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
 
       {/* Disclaimer Modal */}
       <Modal
@@ -268,14 +338,68 @@ export default function HomePage() {
           </View>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    position: 'relative',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
+  },
+  gradientBackground: {
+    flex: 1,
+  },
+  floatingShapes: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  shape: {
+    position: 'absolute',
+    borderRadius: 50,
+    opacity: 0.1,
+  },
+  shape1: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#FFFFFF',
+    top: '10%',
+    left: '10%',
+  },
+  shape2: {
+    width: 150,
+    height: 150,
+    backgroundColor: '#FFD700',
+    top: '20%',
+    right: '15%',
+  },
+  shape3: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#FF6B6B',
+    bottom: '30%',
+    left: '20%',
+  },
+  shape4: {
+    width: 120,
+    height: 120,
+    backgroundColor: '#4ECDC4',
+    bottom: '15%',
+    right: '10%',
+  },
+  safeArea: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -292,25 +416,26 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.light.primary,
+    paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   loginButtonText: {
-    color: Colors.light.primary,
+    color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 14,
   },
   signUpButton: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: Colors.light.primary,
+    paddingVertical: 12,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   signUpButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: '#667eea',
+    fontWeight: '700',
     fontSize: 14,
   },
   heroSection: {
@@ -319,61 +444,94 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   logo: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: Colors.light.primary,
-    marginRight: 12,
+    fontSize: 42,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginHorizontal: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  logoIcon: {
+    marginRight: 4,
+  },
+  logoAccent: {
+    marginLeft: 4,
   },
   aiPoweredBadge: {
-    backgroundColor: Colors.light.nature.sage,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   aiPoweredText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
+    marginLeft: 6,
   },
   heroTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 40,
-    marginBottom: 16,
+    lineHeight: 44,
+    marginBottom: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   heroTitleAccent: {
-    color: Colors.light.primary,
+    color: '#FFD700',
   },
   heroSubtitle: {
     fontSize: 18,
-    color: Colors.light.gray[600],
+    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    lineHeight: 26,
-    marginBottom: 32,
+    lineHeight: 28,
+    marginBottom: 40,
     paddingHorizontal: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   ctaButton: {
-    backgroundColor: Colors.light.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 28,
-    shadowColor: Colors.light.primary,
-    shadowOffset: { width: 0, height: 4 },
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  ctaGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 18,
+    borderRadius: 30,
   },
   ctaButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+    marginRight: 8,
+  },
+  ctaIcon: {
+    marginLeft: 4,
   },
   featuresSection: {
     paddingHorizontal: 20,
@@ -381,8 +539,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontWeight: '800',
+    color: '#2D3748',
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -394,36 +552,46 @@ const styles = StyleSheet.create({
   },
   featureCard: {
     width: (width - 56) / 2,
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
+    borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+    marginBottom: 16,
+  },
+  featureGradient: {
+    padding: 24,
+    borderRadius: 20,
+    alignItems: 'center',
   },
   featureIcon: {
     marginBottom: 16,
   },
   featureTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
+    fontWeight: '700',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
   },
   featureDescription: {
-    fontSize: 14,
-    color: Colors.light.gray[600],
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   benefitsSection: {
     paddingHorizontal: 20,
     paddingVertical: 40,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    marginHorizontal: 20,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
   },
   benefitsList: {
     gap: 16,
@@ -444,18 +612,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerCtaTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   footerCtaSubtitle: {
     fontSize: 16,
-    color: Colors.light.gray[600],
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
     paddingHorizontal: 20,
+    lineHeight: 24,
   },
   // Modal styles
   modalContainer: {
