@@ -1,17 +1,19 @@
 import React, { useState, useCallback } from "react";
 import { StyleSheet, Text, View, Switch, ScrollView, Alert } from "react-native";
-import { Info, HelpCircle, Lock, Trash2, Activity } from "lucide-react-native";
+import { Info, HelpCircle, Lock, Trash2, Activity, BarChart3 } from "lucide-react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 
 import Colors from "@/constants/colors";
 import { useNotes } from "@/hooks/use-notes-store";
 import backgroundProcessor from "@/utils/background-processor";
 import performanceMonitor from "@/utils/performance-monitor";
+import PerformanceDashboard from "@/components/PerformanceDashboard";
 
 export default function SettingsScreen() {
   const { notes, processingCount, completedNotes } = useNotes();
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
   const [autoTranscribeEnabled, setAutoTranscribeEnabled] = useState<boolean>(true);
+  const [showPerformanceDashboard, setShowPerformanceDashboard] = useState<boolean>(false);
   
   const processingStatus = backgroundProcessor.getProcessingStatus();
   const performanceMetrics = performanceMonitor.getMetrics();
@@ -145,6 +147,15 @@ export default function SettingsScreen() {
           <Activity size={20} color={Colors.light.nature.ocean} />
           <Text style={styles.buttonText}>View Performance Metrics</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.button} 
+          onPress={() => setShowPerformanceDashboard(true)}
+          testID="performance-dashboard-button"
+        >
+          <BarChart3 size={20} color={Colors.light.primary} />
+          <Text style={styles.buttonText}>Performance Dashboard</Text>
+        </TouchableOpacity>
       </View>
       
       <View style={styles.section}>
@@ -180,6 +191,11 @@ export default function SettingsScreen() {
           <Text style={styles.buttonText}>Privacy Policy</Text>
         </TouchableOpacity>
       </View>
+      
+      <PerformanceDashboard 
+        visible={showPerformanceDashboard}
+        onClose={() => setShowPerformanceDashboard(false)}
+      />
     </ScrollView>
   );
 }

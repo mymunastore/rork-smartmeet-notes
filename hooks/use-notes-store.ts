@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Note, Project, NotificationSettings } from "@/types/note";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import backgroundProcessor from "@/utils/background-processor";
+import performanceMonitor from "@/utils/performance-monitor";
+import cacheManager from "@/utils/cache-manager";
 import { Alert, Platform } from "react-native";
 
 const STORAGE_KEY = "ai-note-taker-notes";
@@ -29,11 +31,35 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
   }, []);
 
   const loadData = useCallback(async () => {
+    performanceMonitor.startTimer('notes-load');
+    
     try {
       setIsLoading(true);
       
-      // Load notes
-      const storedNotes = await AsyncStorage.getItem(STORAGE_KEY);
+      // Try to load from cache first
+      const cachedNotes = await cacheManager.get<Note[]>('notes-data');
+      const cachedProjects = await cacheManager.get<Project[]>('projects-data');
+      const cachedSettings = await cacheManager.get<NotificationSettings>('settings-data');
+      
+      if (cachedNotes && cachedProjects && cachedSettings) {
+        console.log('📦 Loading data from cache');
+        setNotes(cachedNotes);
+        setProjects(cachedProjects);
+        setNotificationSettings(cachedSettings);
+        setIsLoading(false);
+        performanceMonitor.endTimer('notes-load');
+        return;
+      }
+      
+      // Load from AsyncStorage if cache miss
+      console.log('💾 Loading data from storage');
+      const [storedNotes, storedProjects, storedSettings] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEY),
+        AsyncStorage.getItem(PROJECTS_STORAGE_KEY),
+        AsyncStorage.getItem(SETTINGS_STORAGE_KEY)
+      ]);
+      
+      // Process notes
       if (storedNotes) {
         const parsedNotes = JSON.parse(storedNotes);
         // Migrate old notes to new format
@@ -47,34 +73,40 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
         }));
         setNotes(migratedNotes);
         
+        // Cache the processed notes
+        await cacheManager.set('notes-data', migratedNotes, { ttl: 10 * 60 * 1000 }); // 10 minutes
+        
         // Check for notes that were processing when app was closed
         const processingNotes = migratedNotes.filter((note: Note) => note.isProcessing);
         if (processingNotes.length > 0) {
-          console.log(`Found ${processingNotes.length} notes that were processing`);
+          console.log(`🔄 Found ${processingNotes.length} notes that were processing`);
           processingNotes.forEach((note: Note) => {
             if (note.recordingUri && !note.transcript) {
-              console.log(`Resuming processing for note: ${note.id}`);
+              console.log(`▶️ Resuming processing for note: ${note.id}`);
               setProcessingQueue(prev => new Set([...prev, note.id]));
             }
           });
         }
       }
       
-      // Load projects
-      const storedProjects = await AsyncStorage.getItem(PROJECTS_STORAGE_KEY);
+      // Process projects
       if (storedProjects) {
-        setProjects(JSON.parse(storedProjects));
+        const parsedProjects = JSON.parse(storedProjects);
+        setProjects(parsedProjects);
+        await cacheManager.set('projects-data', parsedProjects, { ttl: 10 * 60 * 1000 });
       }
       
-      // Load notification settings
-      const storedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+      // Process settings
       if (storedSettings) {
-        setNotificationSettings(JSON.parse(storedSettings));
+        const parsedSettings = JSON.parse(storedSettings);
+        setNotificationSettings(parsedSettings);
+        await cacheManager.set('settings-data', parsedSettings, { ttl: 10 * 60 * 1000 });
       }
     } catch (error) {
-      console.error("Failed to load data:", error);
+      console.error("❌ Failed to load data:", error);
     } finally {
       setIsLoading(false);
+      performanceMonitor.endTimer('notes-load');
     }
   }, []);
 

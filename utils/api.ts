@@ -1,101 +1,241 @@
 import { Platform } from "react-native";
+import cacheManager from './cache-manager';
+import performanceMonitor from './performance-monitor';
+
+// Retry configuration
+interface RetryConfig {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
+}
+
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 10000
+};
+
+// Exponential backoff retry function
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  config: RetryConfig = DEFAULT_RETRY_CONFIG
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+      
+      if (attempt === config.maxRetries) {
+        throw lastError;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = Math.min(
+        config.baseDelay * Math.pow(2, attempt),
+        config.maxDelay
+      );
+      
+      console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms:`, error);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError!;
+}
 
 export async function transcribeAudio(
   audioUri: string, 
   language?: string
 ): Promise<{ text: string; detectedLanguage?: string; confidence?: number }> {
-  try {
-    console.log("Transcribing audio with language:", language || 'auto-detect');
+  const cacheKey = `transcription_${audioUri}_${language || 'auto'}`;
+  
+  // Check cache first
+  const cached = await cacheManager.get<{ text: string; detectedLanguage?: string; confidence?: number }>(cacheKey);
+  if (cached) {
+    console.log('📦 Using cached transcription');
+    return cached;
+  }
+  
+  return withRetry(async () => {
+    performanceMonitor.startTimer('transcription-api');
     
-    const formData = new FormData();
-    
-    if (Platform.OS === "web") {
-      // For web, fetch the file and append it
-      const response = await fetch(audioUri);
-      const blob = await response.blob();
-      formData.append("audio", blob);
-    } else {
-      // For native platforms
-      const uriParts = audioUri.split(".");
-      const fileType = uriParts[uriParts.length - 1];
+    try {
+      console.log("🎤 Transcribing audio with language:", language || 'auto-detect');
       
-      const audioFile = {
-        uri: audioUri,
-        name: `recording.${fileType}`,
-        type: `audio/${fileType}`
+      const formData = new FormData();
+      
+      if (Platform.OS === "web") {
+        // For web, fetch the file and append it
+        const response = await fetch(audioUri);
+        const blob = await response.blob();
+        formData.append("audio", blob);
+      } else {
+        // For native platforms
+        const uriParts = audioUri.split(".");
+        const fileType = uriParts[uriParts.length - 1];
+        
+        const audioFile = {
+          uri: audioUri,
+          name: `recording.${fileType}`,
+          type: `audio/${fileType}`
+        };
+        
+        // @ts-ignore - React Native's FormData accepts this format
+        formData.append("audio", audioFile);
+      }
+      
+      // Add language parameter if specified
+      if (language && language !== 'auto') {
+        formData.append("language", language);
+      }
+      
+      const response = await fetch("https://toolkit.rork.com/stt/transcribe/", {
+        method: "POST",
+        body: formData,
+        // Add timeout
+        signal: AbortSignal.timeout(60000) // 60 second timeout
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Transcription failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("✅ Transcription completed:", data.text.substring(0, 50) + "...");
+      
+      const result = {
+        text: data.text,
+        detectedLanguage: data.language,
+        confidence: data.confidence || 1.0,
       };
       
-      // @ts-ignore - React Native's FormData accepts this format
-      formData.append("audio", audioFile);
+      // Cache the result for 1 hour
+      await cacheManager.set(cacheKey, result, { 
+        ttl: 60 * 60 * 1000,
+        persistToDisk: true 
+      });
+      
+      return result;
+    } finally {
+      performanceMonitor.endTimer('transcription-api');
     }
-    
-    // Add language parameter if specified
-    if (language && language !== 'auto') {
-      formData.append("language", language);
-    }
-    
-    const response = await fetch("https://toolkit.rork.com/stt/transcribe/", {
-      method: "POST",
-      body: formData,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Transcription failed: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log("Transcription completed:", data.text.substring(0, 50) + "...");
-    
-    return {
-      text: data.text,
-      detectedLanguage: data.language,
-      confidence: data.confidence || 1.0,
-    };
-  } catch (error) {
-    console.error("Transcription error:", error);
-    throw error;
-  }
+  });
 }
 
 export async function generateSummary(
   transcript: string, 
   language?: string
 ): Promise<string> {
-  try {
-    console.log("Generating summary for language:", language || 'auto');
+  // Create cache key based on transcript hash and language
+  const transcriptHash = btoa(transcript).slice(0, 32); // Simple hash
+  const cacheKey = `summary_${transcriptHash}_${language || 'auto'}`;
+  
+  // Check cache first
+  const cached = await cacheManager.get<string>(cacheKey);
+  if (cached) {
+    console.log('📦 Using cached summary');
+    return cached;
+  }
+  
+  return withRetry(async () => {
+    performanceMonitor.startTimer('summary-api');
     
-    const languageInstruction = language && language !== 'auto' && language !== 'en' 
-      ? ` Please respond in the same language as the transcript (${language}).`
-      : '';
-    
-    const messages = [
-      {
-        role: "system",
-        content: `You are an AI assistant that creates concise, well-structured summaries of meeting transcripts. Focus on key points, action items, and decisions. Use bullet points where appropriate. Keep summaries clear and professional.${languageInstruction}`
-      },
-      {
-        role: "user",
-        content: `Please summarize this meeting transcript: ${transcript}`
+    try {
+      console.log("🧠 Generating summary for language:", language || 'auto');
+      
+      const languageInstruction = language && language !== 'auto' && language !== 'en' 
+        ? ` Please respond in the same language as the transcript (${language}).`
+        : '';
+      
+      const messages = [
+        {
+          role: "system",
+          content: `You are an AI assistant that creates concise, well-structured summaries of meeting transcripts. Focus on key points, action items, and decisions. Use bullet points where appropriate. Keep summaries clear and professional.${languageInstruction}`
+        },
+        {
+          role: "user",
+          content: `Please summarize this meeting transcript: ${transcript}`
+        }
+      ];
+      
+      const response = await fetch("https://toolkit.rork.com/text/llm/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages }),
+        // Add timeout
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Summary generation failed: ${response.status} ${response.statusText}`);
       }
-    ];
-    
-    const response = await fetch("https://toolkit.rork.com/text/llm/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ messages }),
+      
+      const data = await response.json();
+      console.log("✅ Summary generated:", data.completion.substring(0, 50) + "...");
+      
+      // Cache the result for 24 hours
+      await cacheManager.set(cacheKey, data.completion, { 
+        ttl: 24 * 60 * 60 * 1000,
+        persistToDisk: true 
+      });
+      
+      return data.completion;
+    } finally {
+      performanceMonitor.endTimer('summary-api');
+    }
+  });
+}
+
+// Health check function
+export async function checkAPIHealth(): Promise<{
+  transcription: boolean;
+  summary: boolean;
+  latency: number;
+}> {
+  const startTime = Date.now();
+  
+  try {
+    // Test transcription endpoint with a simple request
+    const transcriptionResponse = await fetch("https://toolkit.rork.com/stt/transcribe/", {
+      method: "OPTIONS",
+      signal: AbortSignal.timeout(5000)
     });
     
-    if (!response.ok) {
-      throw new Error(`Summary generation failed: ${response.status}`);
-    }
+    // Test summary endpoint
+    const summaryResponse = await fetch("https://toolkit.rork.com/text/llm/", {
+      method: "OPTIONS",
+      signal: AbortSignal.timeout(5000)
+    });
     
-    const data = await response.json();
-    console.log("Summary generated:", data.completion.substring(0, 50) + "...");
-    return data.completion;
+    const latency = Date.now() - startTime;
+    
+    return {
+      transcription: transcriptionResponse.status < 500,
+      summary: summaryResponse.status < 500,
+      latency
+    };
   } catch (error) {
-    console.error("Summary generation error:", error);
-    throw error;
+    console.warn('API health check failed:', error);
+    return {
+      transcription: false,
+      summary: false,
+      latency: Date.now() - startTime
+    };
   }
+}
+
+// Get API usage statistics
+export function getAPIStats(): {
+  cacheStats: ReturnType<typeof cacheManager.getStats>;
+  performanceStats: ReturnType<typeof performanceMonitor.getSummary>;
+} {
+  return {
+    cacheStats: cacheManager.getStats(),
+    performanceStats: performanceMonitor.getSummary()
+  };
 }

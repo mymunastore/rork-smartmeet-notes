@@ -1,29 +1,86 @@
+interface MemoryUsage {
+  used: number;
+  total: number;
+  percentage: number;
+}
+
+interface PerformanceMetric {
+  average: number;
+  count: number;
+  latest: number;
+  min: number;
+  max: number;
+  p95: number;
+}
+
 class PerformanceMonitor {
   private timers: Map<string, number> = new Map();
   private metrics: Map<string, number[]> = new Map();
+  private memorySnapshots: MemoryUsage[] = [];
+  private maxMetricHistory = 100; // Limit memory usage
+  private isEnabled = __DEV__; // Only enable in development
 
   startTimer(label: string): void {
-    this.timers.set(label, Date.now());
+    if (!this.isEnabled) return;
+    this.timers.set(label, performance.now());
   }
 
   endTimer(label: string): number {
+    if (!this.isEnabled) return 0;
+    
     const startTime = this.timers.get(label);
     if (!startTime) {
       console.warn(`Timer '${label}' was not started`);
       return 0;
     }
 
-    const duration = Date.now() - startTime;
+    const duration = performance.now() - startTime;
     this.timers.delete(label);
 
-    // Store metric
+    // Store metric with history limit
     if (!this.metrics.has(label)) {
       this.metrics.set(label, []);
     }
-    this.metrics.get(label)!.push(duration);
+    const times = this.metrics.get(label)!;
+    times.push(duration);
+    
+    // Keep only recent metrics to prevent memory leaks
+    if (times.length > this.maxMetricHistory) {
+      times.shift();
+    }
 
-    console.log(`⏱️ ${label}: ${duration}ms`);
+    // Only log slow operations
+    if (duration > 100) {
+      console.log(`⏱️ ${label}: ${duration.toFixed(2)}ms`);
+    }
+    
     return duration;
+  }
+
+  measureMemory(): MemoryUsage | null {
+    if (!this.isEnabled) return null;
+    
+    try {
+      // @ts-ignore - performance.memory is available in some environments
+      if (typeof performance !== 'undefined' && performance.memory) {
+        const memory = performance.memory;
+        const usage: MemoryUsage = {
+          used: memory.usedJSHeapSize,
+          total: memory.totalJSHeapSize,
+          percentage: (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100
+        };
+        
+        this.memorySnapshots.push(usage);
+        if (this.memorySnapshots.length > 50) {
+          this.memorySnapshots.shift();
+        }
+        
+        return usage;
+      }
+    } catch {
+      // Memory API not available
+    }
+    return null;
   }
 
   getAverageTime(label: string): number {
@@ -34,16 +91,22 @@ class PerformanceMonitor {
     return sum / times.length;
   }
 
-  getMetrics(): Record<string, { average: number; count: number; latest: number }> {
-    const result: Record<string, { average: number; count: number; latest: number }> = {};
+  getMetrics(): Record<string, PerformanceMetric> {
+    const result: Record<string, PerformanceMetric> = {};
 
     this.metrics.forEach((times, label) => {
       if (times.length > 0) {
+        const sorted = [...times].sort((a, b) => a - b);
         const sum = times.reduce((acc, time) => acc + time, 0);
+        const p95Index = Math.floor(sorted.length * 0.95);
+        
         result[label] = {
           average: sum / times.length,
           count: times.length,
           latest: times[times.length - 1],
+          min: sorted[0],
+          max: sorted[sorted.length - 1],
+          p95: sorted[p95Index] || sorted[sorted.length - 1]
         };
       }
     });
@@ -52,16 +115,72 @@ class PerformanceMonitor {
   }
 
   logMetrics(): void {
+    if (!this.isEnabled) return;
+    
     const metrics = this.getMetrics();
-    console.log("📊 Performance Metrics:");
+    const memory = this.measureMemory();
+    
+    console.group("📊 Performance Metrics");
+    
     Object.entries(metrics).forEach(([label, data]) => {
-      console.log(`  ${label}: avg ${data.average.toFixed(2)}ms (${data.count} samples)`);
+      if (data.count > 0) {
+        console.log(
+          `${label}: avg ${data.average.toFixed(2)}ms | p95 ${data.p95.toFixed(2)}ms | samples ${data.count}`
+        );
+      }
     });
+    
+    if (memory) {
+      console.log(
+        `Memory: ${(memory.used / 1024 / 1024).toFixed(2)}MB / ${(memory.total / 1024 / 1024).toFixed(2)}MB (${memory.percentage.toFixed(1)}%)`
+      );
+    }
+    
+    console.groupEnd();
+  }
+
+  getSlowOperations(threshold = 100): { label: string; duration: number }[] {
+    const slowOps: { label: string; duration: number }[] = [];
+    
+    this.metrics.forEach((times, label) => {
+      const latest = times[times.length - 1];
+      if (latest > threshold) {
+        slowOps.push({ label, duration: latest });
+      }
+    });
+    
+    return slowOps.sort((a, b) => b.duration - a.duration);
   }
 
   clearMetrics(): void {
     this.metrics.clear();
     this.timers.clear();
+    this.memorySnapshots.length = 0;
+  }
+
+  // Enable/disable monitoring
+  setEnabled(enabled: boolean): void {
+    this.isEnabled = enabled;
+  }
+
+  // Get performance summary
+  getSummary(): {
+    totalOperations: number;
+    averageResponseTime: number;
+    slowOperations: number;
+    memoryUsage?: MemoryUsage;
+  } {
+    const metrics = this.getMetrics();
+    const totalOps = Object.values(metrics).reduce((sum, metric) => sum + metric.count, 0);
+    const avgTime = Object.values(metrics).reduce((sum, metric) => sum + metric.average, 0) / Object.keys(metrics).length || 0;
+    const slowOps = this.getSlowOperations().length;
+    
+    return {
+      totalOperations: totalOps,
+      averageResponseTime: avgTime,
+      slowOperations: slowOps,
+      memoryUsage: this.memorySnapshots[this.memorySnapshots.length - 1]
+    };
   }
 }
 
