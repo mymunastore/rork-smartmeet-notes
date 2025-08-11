@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Scribe",
+    "name": "Scribe Notes",
     "slug": "scribe-notes",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.scribe",
+      "bundleIdentifier": "app.rork.scribe.nots",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
@@ -30,7 +30,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.scribe",
+      "package": "app.rork.scribe.notes",
       "permissions": [
         "RECORD_AUDIO",
         "CAMERA",
