@@ -267,22 +267,22 @@ export default function ProfileScreen() {
         {/* Preferences Section */}
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
             {editMode === 'preferences' ? (
               <View style={styles.editActions}>
-                <TouchableOpacity style={styles.actionButton} onPress={handleCancelEdit}>
-                  <X color={Colors.light.error} size={20} />
+                <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.gray[100] }]} onPress={handleCancelEdit}>
+                  <X color={colors.error} size={20} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={handleSavePreferences}>
-                  <Save color={Colors.light.success} size={20} />
+                <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.gray[100] }]} onPress={handleSavePreferences}>
+                  <Save color={colors.success} size={20} />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton, { backgroundColor: colors.gray[100] }]}
                 onPress={() => setEditMode('preferences')}
               >
-                <Settings color={Colors.light.primary} size={20} />
+                <Settings color={colors.primary} size={20} />
               </TouchableOpacity>
             )}
           </View>
@@ -291,11 +291,11 @@ export default function ProfileScreen() {
             <View style={styles.preferencesForm}>
               {/* Theme Settings */}
               <View style={styles.preferenceGroup}>
-                <Text style={styles.preferenceGroupTitle}>Appearance</Text>
+                <Text style={[styles.preferenceGroupTitle, { color: colors.text }]}>Appearance</Text>
                 <View style={styles.preferenceItem}>
                   <View style={styles.preferenceInfo}>
-                    <Moon color={Colors.light.text} size={20} />
-                    <Text style={styles.preferenceLabel}>Theme</Text>
+                    <Moon color={colors.text} size={20} />
+                    <Text style={[styles.preferenceLabel, { color: colors.text }]}>Theme</Text>
                   </View>
                   <View style={styles.themeSelector}>
                     {(['light', 'dark', 'auto'] as const).map((theme) => (
@@ -303,7 +303,8 @@ export default function ProfileScreen() {
                         key={theme}
                         style={[
                           styles.themeOption,
-                          editedPreferences.theme === theme && styles.themeOptionActive,
+                          { backgroundColor: colors.gray[100], borderColor: colors.border },
+                          editedPreferences.theme === theme && { backgroundColor: colors.primary, borderColor: colors.primary },
                         ]}
                         onPress={() =>
                           setEditedPreferences(prev => ({ ...prev, theme }))
@@ -312,7 +313,8 @@ export default function ProfileScreen() {
                         <Text
                           style={[
                             styles.themeOptionText,
-                            editedPreferences.theme === theme && styles.themeOptionTextActive,
+                            { color: colors.gray[700] },
+                            editedPreferences.theme === theme && { color: colors.background, fontWeight: '500' as const },
                           ]}
                         >
                           {theme.charAt(0).toUpperCase() + theme.slice(1)}
@@ -325,7 +327,7 @@ export default function ProfileScreen() {
 
               {/* Notification Settings */}
               <View style={styles.preferenceGroup}>
-                <Text style={styles.preferenceGroupTitle}>Notifications</Text>
+                <Text style={[styles.preferenceGroupTitle, { color: colors.text }]}>Notifications</Text>
                 <PreferenceSwitch
                   icon={<Bell size={20} />}
                   label="Transcription Complete"
@@ -374,7 +376,7 @@ export default function ProfileScreen() {
 
               {/* Recording Settings */}
               <View style={styles.preferenceGroup}>
-                <Text style={styles.preferenceGroupTitle}>Recording</Text>
+                <Text style={[styles.preferenceGroupTitle, { color: colors.text }]}>Recording</Text>
                 <PreferenceSwitch
                   icon={<Smartphone size={20} />}
                   label="Auto Start Recording"
@@ -401,7 +403,7 @@ export default function ProfileScreen() {
 
               {/* Privacy Settings */}
               <View style={styles.preferenceGroup}>
-                <Text style={styles.preferenceGroupTitle}>Privacy & Security</Text>
+                <Text style={[styles.preferenceGroupTitle, { color: colors.text }]}>Privacy & Security</Text>
                 <PreferenceSwitch
                   icon={<Lock size={20} />}
                   label="Biometric Lock"
@@ -427,9 +429,9 @@ export default function ProfileScreen() {
               </View>
 
               {/* Reset Button */}
-              <TouchableOpacity style={styles.resetButton} onPress={handleResetPreferences}>
-                <RotateCcw color={Colors.light.error} size={20} />
-                <Text style={styles.resetButtonText}>Reset to Defaults</Text>
+              <TouchableOpacity style={[styles.resetButton, { backgroundColor: colors.gray[100], borderColor: colors.error }]} onPress={handleResetPreferences}>
+                <RotateCcw color={colors.error} size={20} />
+                <Text style={[styles.resetButtonText, { color: colors.error }]}>Reset to Defaults</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -455,10 +457,10 @@ export default function ProfileScreen() {
 
         {/* Account Actions */}
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity style={styles.dangerButton}>
-            <Trash2 color={Colors.light.error} size={20} />
-            <Text style={styles.dangerButtonText}>Delete Account</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+          <TouchableOpacity style={[styles.dangerButton, { backgroundColor: colors.background, borderColor: colors.error }]}>
+            <Trash2 color={colors.error} size={20} />
+            <Text style={[styles.dangerButtonText, { color: colors.error }]}>Delete Account</Text>
           </TouchableOpacity>
         </View>
 
@@ -475,14 +477,15 @@ interface ProfileInfoItemProps {
 }
 
 function ProfileInfoItem({ icon, label, value }: ProfileInfoItemProps) {
+  const { colors } = useTheme();
   if (!value) return null;
 
   return (
     <View style={styles.infoItem}>
-      <View style={styles.infoIcon}>{icon}</View>
+      <View style={[styles.infoIcon, { backgroundColor: colors.gray[100] }]}>{icon}</View>
       <View style={styles.infoContent}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
+        <Text style={[styles.infoLabel, { color: colors.gray[600] }]}>{label}</Text>
+        <Text style={[styles.infoValue, { color: colors.text }]}>{value}</Text>
       </View>
     </View>
   );
@@ -496,17 +499,18 @@ interface PreferenceSwitchProps {
 }
 
 function PreferenceSwitch({ icon, label, value, onValueChange }: PreferenceSwitchProps) {
+  const { colors } = useTheme();
   return (
     <View style={styles.preferenceItem}>
       <View style={styles.preferenceInfo}>
         <View style={styles.preferenceIcon}>{icon}</View>
-        <Text style={styles.preferenceLabel}>{label}</Text>
+        <Text style={[styles.preferenceLabel, { color: colors.text }]}>{label}</Text>
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: Colors.light.gray[300], true: Colors.light.primary }}
-        thumbColor={value ? Colors.light.background : Colors.light.gray[100]}
+        trackColor={{ false: colors.gray[300], true: colors.primary }}
+        thumbColor={value ? colors.background : colors.gray[100]}
       />
     </View>
   );
@@ -519,12 +523,13 @@ interface PreferenceDisplayItemProps {
 }
 
 function PreferenceDisplayItem({ icon, label, value }: PreferenceDisplayItemProps) {
+  const { colors } = useTheme();
   return (
     <View style={styles.displayItem}>
-      <View style={styles.displayIcon}>{icon}</View>
+      <View style={[styles.displayIcon, { backgroundColor: colors.gray[100] }]}>{icon}</View>
       <View style={styles.displayContent}>
-        <Text style={styles.displayLabel}>{label}</Text>
-        <Text style={styles.displayValue}>{value}</Text>
+        <Text style={[styles.displayLabel, { color: colors.gray[600] }]}>{label}</Text>
+        <Text style={[styles.displayValue, { color: colors.text }]}>{value}</Text>
       </View>
     </View>
   );
@@ -533,7 +538,6 @@ function PreferenceDisplayItem({ icon, label, value }: PreferenceDisplayItemProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   centered: {
     justifyContent: 'center',
@@ -541,15 +545,12 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: Colors.light.gray[600],
   },
   header: {
     alignItems: 'center',
     paddingVertical: 32,
     paddingHorizontal: 20,
-    backgroundColor: Colors.light.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   profileImageContainer: {
     position: 'relative',
@@ -559,13 +560,11 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.light.gray[200],
   },
   profileImagePlaceholder: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.light.gray[200],
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -576,37 +575,30 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.light.primary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: Colors.light.background,
   },
   userName: {
     fontSize: 24,
     fontWeight: '700' as const,
-    color: Colors.light.text,
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 16,
-    color: Colors.light.gray[600],
     marginBottom: 8,
   },
   userBio: {
     fontSize: 14,
-    color: Colors.light.gray[700],
     textAlign: 'center',
     lineHeight: 20,
   },
   section: {
-    backgroundColor: Colors.light.card,
     marginTop: 12,
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: Colors.light.border,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -617,7 +609,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600' as const,
-    color: Colors.light.text,
   },
   editActions: {
     flexDirection: 'row',
@@ -626,7 +617,6 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: Colors.light.gray[100],
   },
   editForm: {
     gap: 16,
@@ -637,17 +627,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500' as const,
-    color: Colors.light.text,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: Colors.light.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: Colors.light.text,
-    backgroundColor: Colors.light.background,
   },
   textArea: {
     height: 80,
@@ -665,7 +651,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.light.gray[100],
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -674,12 +659,10 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: Colors.light.gray[600],
     marginBottom: 2,
   },
   infoValue: {
     fontSize: 16,
-    color: Colors.light.text,
   },
   preferencesForm: {
     gap: 24,
@@ -690,7 +673,6 @@ const styles = StyleSheet.create({
   preferenceGroupTitle: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: Colors.light.text,
     marginBottom: 8,
   },
   preferenceItem: {
@@ -706,11 +688,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   preferenceIcon: {
-    color: Colors.light.gray[600],
+    // No color here, it's applied dynamically
   },
   preferenceLabel: {
     fontSize: 16,
-    color: Colors.light.text,
   },
   themeSelector: {
     flexDirection: 'row',
@@ -720,21 +701,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: Colors.light.gray[100],
     borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  themeOptionActive: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
   },
   themeOptionText: {
     fontSize: 12,
-    color: Colors.light.gray[700],
-  },
-  themeOptionTextActive: {
-    color: Colors.light.background,
-    fontWeight: '500' as const,
   },
   resetButton: {
     flexDirection: 'row',
@@ -744,13 +714,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: Colors.light.gray[100],
     borderWidth: 1,
-    borderColor: Colors.light.error,
   },
   resetButtonText: {
     fontSize: 16,
-    color: Colors.light.error,
     fontWeight: '500' as const,
   },
   preferencesDisplay: {
@@ -765,7 +732,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.light.gray[100],
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -774,12 +740,10 @@ const styles = StyleSheet.create({
   },
   displayLabel: {
     fontSize: 12,
-    color: Colors.light.gray[600],
     marginBottom: 2,
   },
   displayValue: {
     fontSize: 16,
-    color: Colors.light.text,
   },
   dangerButton: {
     flexDirection: 'row',
@@ -789,13 +753,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: Colors.light.background,
     borderWidth: 1,
-    borderColor: Colors.light.error,
   },
   dangerButtonText: {
     fontSize: 16,
-    color: Colors.light.error,
     fontWeight: '500' as const,
   },
   bottomSpacing: {
