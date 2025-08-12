@@ -7,6 +7,7 @@ import {
   Animated,
   TouchableOpacity,
   StatusBar,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -357,21 +358,13 @@ export default function LogoIntroPage() {
             },
           ]}
         >
-          <LinearGradient
-            colors={['#FFFFFF', '#F0F8FF', '#E6F3FF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.logoCircle}
-          >
-            <View style={styles.logoInner}>
-              <View style={styles.logoIconContainer}>
-                <Sparkles color="#667eea" size={32} />
-                <View style={styles.logoAccent}>
-                  <Zap color="#f5576c" size={20} />
-                </View>
-              </View>
-            </View>
-          </LinearGradient>
+          <View style={styles.logoCircle}>
+            <Image
+              source={{ uri: 'https://r2-pub.rork.com/generated-images/357062dc-84eb-4fcc-bafd-79ac83253b9f.png' }}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
         </Animated.View>
 
         {/* Logo Text */}
@@ -547,30 +540,15 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
   },
-  logoInner: {
+  logoImage: {
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
   },
-  logoIconContainer: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoAccent: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-  },
+
   textContainer: {
     alignItems: 'center',
     marginTop: 40,

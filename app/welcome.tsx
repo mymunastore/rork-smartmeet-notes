@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Dimensions,
   Animated,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Mic, Brain, FileText, Shield, CheckCircle, X, Sparkles, Zap, Globe } from 'lucide-react-native';
@@ -201,9 +202,12 @@ export default function WelcomePage() {
           <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
             <View style={styles.headerLogo}>
               <View style={styles.headerLogoWrapper}>
-                <Sparkles color="#FFFFFF" size={20} style={styles.headerLogoIcon} />
+                <Image
+                  source={{ uri: 'https://r2-pub.rork.com/generated-images/8bdab479-488b-4cee-af04-5361f59c5c12.png' }}
+                  style={styles.headerLogoImage}
+                  resizeMode="contain"
+                />
                 <Text style={styles.headerLogoText}>SCRIBE AI</Text>
-                <Zap color="#FFD700" size={16} style={styles.headerLogoAccent} />
               </View>
             </View>
             <View style={styles.authButtons}>
@@ -450,6 +454,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  headerLogoImage: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+  },
   headerLogoText: {
     fontSize: 24,
     fontWeight: '900',
@@ -459,12 +468,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
-  headerLogoIcon: {
-    marginRight: 3,
-  },
-  headerLogoAccent: {
-    marginLeft: 3,
-  },
+
   authButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
