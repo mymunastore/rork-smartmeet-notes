@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeStorage } from '@/utils/safe-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import Colors from '@/constants/colors';
 
@@ -62,8 +62,8 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   useEffect(() => {
     const loadThemePreferences = async () => {
       try {
-        const savedThemeMode = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-        const savedColorScheme = await AsyncStorage.getItem(COLOR_SCHEME_STORAGE_KEY);
+        const savedThemeMode = await safeStorage.getItem(THEME_STORAGE_KEY);
+        const savedColorScheme = await safeStorage.getItem(COLOR_SCHEME_STORAGE_KEY);
         
         if (savedThemeMode) {
           setThemeModeState(savedThemeMode as ThemeMode);
@@ -94,7 +94,7 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   const setThemeMode = useCallback(async (mode: ThemeMode) => {
     try {
       setThemeModeState(mode);
-      await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
+      await safeStorage.setItem(THEME_STORAGE_KEY, mode);
     } catch (error) {
       console.error('Failed to save theme mode:', error);
     }
@@ -103,7 +103,7 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   const setColorScheme = useCallback(async (scheme: ColorScheme) => {
     try {
       setColorSchemeState(scheme);
-      await AsyncStorage.setItem(COLOR_SCHEME_STORAGE_KEY, scheme);
+      await safeStorage.setItem(COLOR_SCHEME_STORAGE_KEY, scheme);
     } catch (error) {
       console.error('Failed to save color scheme:', error);
     }

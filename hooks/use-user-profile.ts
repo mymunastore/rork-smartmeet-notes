@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { safeStorage } from "@/utils/safe-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { useEffect, useState, useCallback } from "react";
 import { UserProfile, UserPreferences, DEFAULT_USER_PREFERENCES } from "@/types/user";
@@ -29,7 +29,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
   const loadUserProfile = useCallback(async () => {
     try {
       setIsLoading(true);
-      const storedProfile = await AsyncStorage.getItem(USER_PROFILE_KEY);
+      const storedProfile = await safeStorage.getItem(USER_PROFILE_KEY);
       
       if (storedProfile) {
         const parsedProfile = JSON.parse(storedProfile);
@@ -38,7 +38,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
         // Create mock user for demo
         const mockUser = createMockUser();
         setUserProfile(mockUser);
-        await AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(mockUser));
+        await safeStorage.setItem(USER_PROFILE_KEY, JSON.stringify(mockUser));
       }
     } catch (error) {
       console.error("Failed to load user profile:", error);
@@ -52,7 +52,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
 
   const loadUserPreferences = useCallback(async () => {
     try {
-      const storedPreferences = await AsyncStorage.getItem(USER_PREFERENCES_KEY);
+      const storedPreferences = await safeStorage.getItem(USER_PREFERENCES_KEY);
       
       if (storedPreferences) {
         const parsedPreferences = JSON.parse(storedPreferences);
@@ -79,7 +79,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
       };
 
       setUserProfile(updatedProfile);
-      await AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(updatedProfile));
+      await safeStorage.setItem(USER_PROFILE_KEY, JSON.stringify(updatedProfile));
       
       console.log("User profile updated successfully");
     } catch (error) {
@@ -95,7 +95,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
       };
 
       setPreferences(updatedPreferences);
-      await AsyncStorage.setItem(USER_PREFERENCES_KEY, JSON.stringify(updatedPreferences));
+      await safeStorage.setItem(USER_PREFERENCES_KEY, JSON.stringify(updatedPreferences));
 
       // Also update the user profile with new preferences
       if (userProfile) {
@@ -105,7 +105,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
           updatedAt: new Date().toISOString(),
         };
         setUserProfile(updatedProfile);
-        await AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(updatedProfile));
+        await safeStorage.setItem(USER_PROFILE_KEY, JSON.stringify(updatedProfile));
       }
 
       console.log("User preferences updated successfully");

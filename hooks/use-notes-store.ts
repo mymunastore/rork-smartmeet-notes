@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { safeStorage } from "@/utils/safe-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Note, Project, NotificationSettings } from "@/types/note";
@@ -56,9 +56,9 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
       // Load from AsyncStorage if cache miss with parallel requests
       console.log('💾 Loading data from storage');
       const [storedNotes, storedProjects, storedSettings] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY),
-        AsyncStorage.getItem(PROJECTS_STORAGE_KEY),
-        AsyncStorage.getItem(SETTINGS_STORAGE_KEY)
+        safeStorage.getItem(STORAGE_KEY),
+        safeStorage.getItem(PROJECTS_STORAGE_KEY),
+        safeStorage.getItem(SETTINGS_STORAGE_KEY)
       ]);
       
       // Process data in parallel
@@ -168,7 +168,7 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
         return note;
       });
       
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(optimizedNotes));
+      await safeStorage.setItem(STORAGE_KEY, JSON.stringify(optimizedNotes));
     } catch (error) {
       console.error("Failed to save notes:", error);
     }
@@ -279,7 +279,7 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
     
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
-    await AsyncStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(updatedProjects));
+    await safeStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(updatedProjects));
     return newProject;
   }, [projects]);
   
@@ -293,7 +293,7 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
       project.id === projectWithTimestamp.id ? projectWithTimestamp : project
     );
     setProjects(updatedProjects);
-    await AsyncStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(updatedProjects));
+    await safeStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(updatedProjects));
     return projectWithTimestamp;
   }, [projects]);
   
@@ -308,7 +308,7 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
     // Delete the project
     const updatedProjects = projects.filter(project => project.id !== id);
     setProjects(updatedProjects);
-    await AsyncStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(updatedProjects));
+    await safeStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(updatedProjects));
   }, [notes, projects, saveNotes]);
   
   const updateProjectNoteCount = useCallback(async (projectId: string, delta: number) => {
@@ -323,13 +323,13 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
       return project;
     });
     setProjects(updatedProjects);
-    await AsyncStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(updatedProjects));
+    await safeStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(updatedProjects));
   }, [projects]);
   
   // Notification settings
   const updateNotificationSettings = useCallback(async (settings: NotificationSettings) => {
     setNotificationSettings(settings);
-    await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    await safeStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   }, []);
   
   // Show notification helper

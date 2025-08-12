@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeStorage } from '@/utils/safe-storage';
 
 export interface ChatMessage {
   id: string;
@@ -27,7 +27,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
   React.useEffect(() => {
     const loadMessages = async () => {
       try {
-        const stored = await AsyncStorage.getItem(CHAT_STORAGE_KEY);
+        const stored = await safeStorage.getItem(CHAT_STORAGE_KEY);
         if (stored) {
           const parsedMessages = JSON.parse(stored).map((msg: any) => ({
             ...msg,
@@ -46,7 +46,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
   React.useEffect(() => {
     const saveMessages = async () => {
       try {
-        await AsyncStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+        await safeStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
       } catch (error) {
         console.error('Failed to save chat messages:', error);
       }
