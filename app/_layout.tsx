@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { NotesProvider } from "@/hooks/use-notes-store";
 import { UserProfileProvider } from "@/hooks/use-user-profile";
 import { useBackgroundProcessing } from "@/hooks/use-background-processing";
+import { ChatProvider } from "@/hooks/use-chat-store";
 import { trpc, trpcClient } from "@/lib/trpc";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -59,9 +60,11 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <UserProfileProvider>
           <NotesProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <RootLayoutNav />
-            </GestureHandlerRootView>
+            <ChatProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <RootLayoutNav />
+              </GestureHandlerRootView>
+            </ChatProvider>
           </NotesProvider>
         </UserProfileProvider>
       </QueryClientProvider>

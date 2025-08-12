@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { FileText, Settings, User } from "lucide-react-native";
+import { FileText, Settings, User, MessageCircle } from "lucide-react-native";
 import React from "react";
 
 import Colors from "@/constants/colors";
@@ -18,6 +18,13 @@ export default function TabLayout() {
         options={{
           title: "Notes",
           tabBarIcon: ({ color }) => <FileText color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: "AI Chat",
+          tabBarIcon: ({ color }) => <MessageCircle color={color} size={24} />,
         }}
       />
       <Tabs.Screen

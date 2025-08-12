@@ -18,6 +18,7 @@ import { useNotes } from "@/hooks/use-notes-store";
 import NoteCard from "@/components/NoteCard";
 import EmptyNotesList from "@/components/EmptyNotesList";
 import AdvancedSearch from "@/components/AdvancedSearch";
+import FloatingChatButton from "@/components/FloatingChatButton";
 
 export default function NotesScreen() {
   const router = useRouter();
@@ -256,6 +257,8 @@ export default function NotesScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
+      
+      <FloatingChatButton />
     </View>
   );
 }
