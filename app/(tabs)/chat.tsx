@@ -25,12 +25,13 @@ import {
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Colors from '@/constants/colors';
 import { useNotes } from '@/hooks/use-notes-store';
 import { useChat, useChatContext, ChatMessage } from '@/hooks/use-chat-store';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { notes, completedNotes } = useNotes();
   const { messages, isLoading, sendMessage, clearChat, markAsRead } = useChat();
   const { getChatContextData } = useChatContext();
@@ -116,35 +117,35 @@ export default function ChatScreen() {
         ]}
       >
         <View style={styles.messageHeader}>
-          <View style={styles.messageIcon}>
+          <View style={[styles.messageIcon, { backgroundColor: `${item.isUser ? colors.primary : colors.nature.sage}1A` }]}>
             {item.isUser ? (
-              <User size={16} color={Colors.light.primary} />
+              <User size={16} color={colors.primary} />
             ) : (
-              <Bot size={16} color={Colors.light.nature.sage} />
+              <Bot size={16} color={colors.nature.sage} />
             )}
           </View>
-          <Text style={styles.messageSender}>
+          <Text style={[styles.messageSender, { color: colors.text }]}>
             {item.isUser ? 'You' : 'AI Assistant'}
           </Text>
-          <Text style={styles.messageTime}>
+          <Text style={[styles.messageTime, { color: colors.gray[400] }]}>
             {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
         </View>
         
         {item.isTyping ? (
           <View style={styles.typingContainer}>
-            <ActivityIndicator size="small" color={Colors.light.nature.sage} />
-            <Text style={styles.typingText}>AI is thinking...</Text>
+            <ActivityIndicator size="small" color={colors.nature.sage} />
+            <Text style={[styles.typingText, { color: colors.gray[500] }]}>AI is thinking...</Text>
           </View>
         ) : (
           <>
             <View style={[
               styles.messageBubble,
-              item.isUser ? styles.userBubble : styles.aiBubble,
+              item.isUser ? { ...styles.userBubble, backgroundColor: colors.primary } : { ...styles.aiBubble, backgroundColor: colors.card, shadowColor: colors.gray[300] },
             ]}>
               <Text style={[
                 styles.messageText,
-                item.isUser ? styles.userText : styles.aiText,
+                item.isUser ? styles.userText : { color: colors.text },
               ]}>
                 {item.text}
               </Text>
@@ -153,19 +154,19 @@ export default function ChatScreen() {
             {!item.isUser && (
               <View style={styles.messageActions}>
                 <TouchableOpacity
-                  style={styles.actionButton}
+                  style={[styles.actionButton, { backgroundColor: `${colors.gray[500]}1A` }]}
                   onPress={() => copyMessage(item.text)}
                 >
-                  <Copy size={14} color={Colors.light.gray[500]} />
+                  <Copy size={14} color={colors.gray[500]} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.actionButton}
+                  style={[styles.actionButton, { backgroundColor: `${colors.gray[500]}1A` }]}
                   onPress={() => speakMessage(item.text)}
                 >
                   {isSpeaking ? (
-                    <VolumeX size={14} color={Colors.light.nature.coral} />
+                    <VolumeX size={14} color={colors.nature.coral} />
                   ) : (
-                    <Volume2 size={14} color={Colors.light.gray[500]} />
+                    <Volume2 size={14} color={colors.gray[500]} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -174,33 +175,33 @@ export default function ChatScreen() {
         )}
       </Animated.View>
     );
-  }, [messages.length, fadeAnim, copyMessage, speakMessage, isSpeaking]);
+  }, [messages.length, fadeAnim, copyMessage, speakMessage, isSpeaking, colors]);
 
   const keyExtractor = useCallback((item: ChatMessage) => item.id, []);
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingBottom: insets.bottom }]}
+      style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Header */}
       <LinearGradient
-        colors={[Colors.light.background, 'rgba(247, 250, 252, 0.95)']}
-        style={styles.header}
+        colors={[colors.background, `${colors.background}F2`]}
+        style={[styles.header, { borderBottomColor: colors.border }]}
       >
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <View style={styles.headerIcon}>
-              <Sparkles size={20} color={Colors.light.nature.sage} />
+            <View style={[styles.headerIcon, { backgroundColor: `${colors.nature.sage}1A` }]}>
+              <Sparkles size={20} color={colors.nature.sage} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>AI Assistant</Text>
-              <Text style={styles.headerSubtitle}>Powered by Scribe AI</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>AI Assistant</Text>
+              <Text style={[styles.headerSubtitle, { color: colors.gray[500] }]}>Powered by Scribe AI</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.clearButton} onPress={handleClearChat}>
-            <Trash2 size={18} color={Colors.light.gray[500]} />
+          <TouchableOpacity style={[styles.clearButton, { backgroundColor: `${colors.error}1A` }]} onPress={handleClearChat}>
+            <Trash2 size={18} color={colors.gray[500]} />
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -219,18 +220,18 @@ export default function ChatScreen() {
       />
 
       {/* Input */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { borderTopColor: colors.border }]}>
         <LinearGradient
-          colors={['rgba(255,255,255,0.95)', 'rgba(247, 250, 252, 0.98)']}
+          colors={[`${colors.background}F2`, `${colors.background}FA`]}
           style={styles.inputGradient}
         >
           <View style={styles.inputRow}>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
               value={inputText}
               onChangeText={setInputText}
               placeholder="Ask me anything about your notes or the app..."
-              placeholderTextColor={Colors.light.gray[400]}
+              placeholderTextColor={colors.gray[400]}
               multiline
               maxLength={500}
               editable={!isLoading}
@@ -248,8 +249,8 @@ export default function ChatScreen() {
               <LinearGradient
                 colors={
                   !inputText.trim() || isLoading
-                    ? [Colors.light.gray[300], Colors.light.gray[400]]
-                    : [Colors.light.primary, Colors.light.secondary]
+                    ? [colors.gray[300], colors.gray[400]]
+                    : [colors.primary, colors.secondary]
                 }
                 style={styles.sendButtonGradient}
               >
@@ -270,13 +271,11 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   headerContent: {
     flexDirection: 'row',
@@ -292,24 +291,20 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: Colors.light.gray[500],
     marginTop: 2,
   },
   clearButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
   },
   messagesList: {
     flex: 1,
@@ -337,18 +332,15 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   messageSender: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   messageTime: {
     fontSize: 11,
-    color: Colors.light.gray[400],
     marginLeft: 'auto',
   },
   messageBubble: {
@@ -358,13 +350,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   userBubble: {
-    backgroundColor: Colors.light.primary,
     borderBottomRightRadius: 4,
   },
   aiBubble: {
-    backgroundColor: '#fff',
     borderBottomLeftRadius: 4,
-    shadowColor: Colors.light.gray[300],
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -377,9 +366,7 @@ const styles = StyleSheet.create({
   userText: {
     color: '#fff',
   },
-  aiText: {
-    color: Colors.light.text,
-  },
+
   typingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -389,7 +376,6 @@ const styles = StyleSheet.create({
   },
   typingText: {
     fontSize: 14,
-    color: Colors.light.gray[500],
     fontStyle: 'italic',
   },
   messageActions: {
@@ -400,11 +386,9 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 6,
     borderRadius: 6,
-    backgroundColor: 'rgba(156, 163, 175, 0.1)',
   },
   inputContainer: {
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
   },
   inputGradient: {
     paddingHorizontal: 16,
@@ -421,12 +405,9 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.light.border,
     fontSize: 15,
-    color: Colors.light.text,
     textAlignVertical: 'top',
   },
   sendButton: {

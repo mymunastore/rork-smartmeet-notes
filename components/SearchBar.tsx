@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View } from "react-native";
 import { Search, X } from "lucide-react-native";
 import React, { memo, useCallback } from "react";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/hooks/use-theme";
 
 interface SearchBarProps {
   value: string;
@@ -10,16 +10,17 @@ interface SearchBarProps {
 }
 
 const SearchBar = memo(function SearchBar({ value, onChangeText, onClear }: SearchBarProps) {
+  const { colors } = useTheme();
   const handleClear = useCallback(() => {
     onClear();
   }, [onClear]);
   return (
-    <View style={styles.container} testID="search-bar">
-      <Search size={22} color={Colors.light.nature.moss} style={styles.icon} />
+    <View style={[styles.container, { backgroundColor: colors.nature.sand, borderColor: colors.border, shadowColor: colors.nature.sage }]} testID="search-bar">
+      <Search size={22} color={colors.nature.moss} style={styles.icon} />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: colors.text }]}
         placeholder="Search your notes..."
-        placeholderTextColor={Colors.light.gray[500]}
+        placeholderTextColor={colors.gray[500]}
         value={value}
         onChangeText={onChangeText}
         testID="search-input"
@@ -27,7 +28,7 @@ const SearchBar = memo(function SearchBar({ value, onChangeText, onClear }: Sear
       {value.length > 0 && (
         <X
           size={22}
-          color={Colors.light.nature.coral}
+          color={colors.nature.coral}
           style={styles.clearIcon}
           onPress={handleClear}
           testID="clear-search"
@@ -43,13 +44,10 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.light.nature.sand,
     borderRadius: 16,
     paddingHorizontal: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: Colors.light.border,
-    shadowColor: Colors.light.nature.sage,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -61,7 +59,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 48,
-    color: Colors.light.text,
     fontSize: 16,
     fontWeight: "500",
   },

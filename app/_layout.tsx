@@ -18,9 +18,14 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   // Initialize background processing
   useBackgroundProcessing();
+  const { colors } = useTheme();
   
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+    <Stack screenOptions={{ 
+      headerBackTitle: "Back",
+      headerStyle: { backgroundColor: colors.background },
+      headerTintColor: colors.text,
+    }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="logo-intro" options={{ headerShown: false }} />
       <Stack.Screen name="welcome" options={{ headerShown: false }} />

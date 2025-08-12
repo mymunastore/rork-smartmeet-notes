@@ -13,8 +13,8 @@ import { Plus, TrendingUp, Zap } from "lucide-react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 
-import Colors from "@/constants/colors";
 import { useNotes } from "@/hooks/use-notes-store";
+import { useTheme } from "@/hooks/use-theme";
 import NoteCard from "@/components/NoteCard";
 import EmptyNotesList from "@/components/EmptyNotesList";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -22,6 +22,7 @@ import FloatingChatButton from "@/components/FloatingChatButton";
 
 export default function NotesScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { notes, isLoading, processingCount, searchNotes, completedNotes, starredNotes } = useNotes();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -121,24 +122,24 @@ export default function NotesScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.light.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container} testID="notes-screen">
+    <View style={[styles.container, { backgroundColor: colors.background }]} testID="notes-screen">
       <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
         <LinearGradient
-          colors={[Colors.light.background, 'rgba(247, 250, 252, 0.95)']}
+          colors={[colors.background, `${colors.background}F2`]}
           style={styles.headerGradient}
         >
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>🌿 My Notes</Text>
+            <Text style={[styles.title, { color: colors.primary }]}>🌿 My Notes</Text>
             <View style={styles.badges}>
               <LinearGradient
-                colors={[Colors.light.nature.sage, Colors.light.nature.ocean]}
+                colors={[colors.nature.sage, colors.nature.ocean]}
                 style={styles.natureBadge}
               >
                 <Zap size={12} color="#fff" />
@@ -148,38 +149,38 @@ export default function NotesScreen() {
           </View>
           
           {/* Enhanced Stats Row */}
-          <View style={styles.statsContainer}>
+          <View style={[styles.statsContainer, { backgroundColor: `${colors.card}CC`, shadowColor: colors.nature.sage }]}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{notesStats.total}</Text>
-              <Text style={styles.statLabel}>Total</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{notesStats.total}</Text>
+              <Text style={[styles.statLabel, { color: colors.gray[600] }]}>Total</Text>
             </View>
-            <View style={styles.statSeparator} />
+            <View style={[styles.statSeparator, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{notesStats.completed}</Text>
-              <Text style={styles.statLabel}>Completed</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{notesStats.completed}</Text>
+              <Text style={[styles.statLabel, { color: colors.gray[600] }]}>Completed</Text>
             </View>
-            <View style={styles.statSeparator} />
+            <View style={[styles.statSeparator, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{notesStats.starred}</Text>
-              <Text style={styles.statLabel}>Starred</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{notesStats.starred}</Text>
+              <Text style={[styles.statLabel, { color: colors.gray[600] }]}>Starred</Text>
             </View>
             {notesStats.processing > 0 && (
               <>
-                <View style={styles.statSeparator} />
+                <View style={[styles.statSeparator, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
-                  <Text style={[styles.statValue, { color: Colors.light.nature.coral }]}>
+                  <Text style={[styles.statValue, { color: colors.nature.coral }]}>
                     {notesStats.processing}
                   </Text>
-                  <Text style={styles.statLabel}>Processing</Text>
+                  <Text style={[styles.statLabel, { color: colors.gray[600] }]}>Processing</Text>
                 </View>
               </>
             )}
           </View>
           
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: colors.gray[600] }]}>
             Your AI-powered meeting transcriptions and summaries
             {notesStats.completionRate > 0 && (
-              <Text style={styles.completionText}>
+              <Text style={[styles.completionText, { color: colors.nature.sage }]}>
                 {' • '}{notesStats.completionRate.toFixed(0)}% completion rate
               </Text>
             )}
@@ -203,9 +204,9 @@ export default function NotesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[Colors.light.primary]}
-            tintColor={Colors.light.primary}
-            progressBackgroundColor={Colors.light.background}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+            progressBackgroundColor={colors.background}
           />
         }
         onScroll={handleScroll}
@@ -245,7 +246,7 @@ export default function NotesScreen() {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={[Colors.light.primary, Colors.light.secondary]}
+            colors={[colors.primary, colors.secondary]}
             style={styles.fabGradient}
           >
             <Plus color="#fff" size={28} />
@@ -266,7 +267,6 @@ export default function NotesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   loadingContainer: {
     flex: 1,
@@ -294,7 +294,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "800",
-    color: Colors.light.primary,
     marginRight: 12,
   },
   natureBadge: {
@@ -315,11 +314,9 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.8)',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: Colors.light.nature.sage,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -332,12 +329,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: Colors.light.text,
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 11,
-    color: Colors.light.gray[600],
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -345,17 +340,14 @@ const styles = StyleSheet.create({
   statSeparator: {
     width: 1,
     height: 24,
-    backgroundColor: Colors.light.border,
     marginHorizontal: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: Colors.light.gray[600],
     lineHeight: 20,
     textAlign: 'center',
   },
   completionText: {
-    color: Colors.light.nature.sage,
     fontWeight: '600',
   },
 
@@ -374,7 +366,7 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    shadowColor: Colors.light.primary,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

@@ -31,12 +31,13 @@ import {
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import Colors from '@/constants/colors';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { useTheme } from '@/hooks/use-theme';
 
 type EditMode = 'none' | 'profile' | 'preferences';
 
 export default function ProfileScreen() {
+  const { colors } = useTheme();
   const {
     userProfile,
     preferences,
@@ -126,8 +127,8 @@ export default function ProfileScreen() {
 
   if (isLoading || !userProfile) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.loadingText}>Loading profile...</Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+        <Text style={[styles.loadingText, { color: colors.gray[600] }]}>Loading profile...</Text>
       </View>
     );
   }
@@ -137,49 +138,49 @@ export default function ProfileScreen() {
       <Stack.Screen
         options={{
           title: 'Profile',
-          headerStyle: { backgroundColor: Colors.light.background },
-          headerTintColor: Colors.light.text,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
         }}
       />
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <View style={styles.profileImageContainer}>
             {userProfile.profilePicture ? (
               <Image source={{ uri: userProfile.profilePicture }} style={styles.profileImage} />
             ) : (
-              <View style={styles.profileImagePlaceholder}>
-                <User color={Colors.light.gray[500]} size={40} />
+              <View style={[styles.profileImagePlaceholder, { backgroundColor: colors.gray[200] }]}>
+                <User color={colors.gray[500]} size={40} />
               </View>
             )}
-            <TouchableOpacity style={styles.cameraButton} onPress={handleImagePicker}>
-              <Camera color={Colors.light.background} size={16} />
+            <TouchableOpacity style={[styles.cameraButton, { backgroundColor: colors.primary, borderColor: colors.background }]} onPress={handleImagePicker}>
+              <Camera color={colors.background} size={16} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.userName}>{userProfile.name}</Text>
-          <Text style={styles.userEmail}>{userProfile.email}</Text>
-          {userProfile.bio && <Text style={styles.userBio}>{userProfile.bio}</Text>}
+          <Text style={[styles.userName, { color: colors.text }]}>{userProfile.name}</Text>
+          <Text style={[styles.userEmail, { color: colors.gray[600] }]}>{userProfile.email}</Text>
+          {userProfile.bio && <Text style={[styles.userBio, { color: colors.gray[700] }]}>{userProfile.bio}</Text>}
         </View>
 
         {/* Profile Information Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Profile Information</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Profile Information</Text>
             {editMode === 'profile' ? (
               <View style={styles.editActions}>
-                <TouchableOpacity style={styles.actionButton} onPress={handleCancelEdit}>
-                  <X color={Colors.light.error} size={20} />
+                <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.gray[100] }]} onPress={handleCancelEdit}>
+                  <X color={colors.error} size={20} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={handleSaveProfile}>
-                  <Save color={Colors.light.success} size={20} />
+                <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.gray[100] }]} onPress={handleSaveProfile}>
+                  <Save color={colors.success} size={20} />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton, { backgroundColor: colors.gray[100] }]}
                 onPress={() => setEditMode('profile')}
               >
-                <Edit3 color={Colors.light.primary} size={20} />
+                <Edit3 color={colors.primary} size={20} />
               </TouchableOpacity>
             )}
           </View>
@@ -187,70 +188,70 @@ export default function ProfileScreen() {
           {editMode === 'profile' ? (
             <View style={styles.editForm}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Full Name</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   value={editedProfile?.name || ''}
                   onChangeText={(text) =>
                     setEditedProfile(prev => prev ? { ...prev, name: text } : null)
                   }
                   placeholder="Enter your full name"
-                  placeholderTextColor={Colors.light.gray[400]}
+                  placeholderTextColor={colors.gray[400]}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Bio</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Bio</Text>
                 <TextInput
-                  style={[styles.textInput, styles.textArea]}
+                  style={[styles.textInput, styles.textArea, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   value={editedProfile?.bio || ''}
                   onChangeText={(text) =>
                     setEditedProfile(prev => prev ? { ...prev, bio: text } : null)
                   }
                   placeholder="Tell us about yourself"
-                  placeholderTextColor={Colors.light.gray[400]}
+                  placeholderTextColor={colors.gray[400]}
                   multiline
                   numberOfLines={3}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Phone</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Phone</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   value={editedProfile?.phone || ''}
                   onChangeText={(text) =>
                     setEditedProfile(prev => prev ? { ...prev, phone: text } : null)
                   }
                   placeholder="Enter your phone number"
-                  placeholderTextColor={Colors.light.gray[400]}
+                  placeholderTextColor={colors.gray[400]}
                   keyboardType="phone-pad"
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Company</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Company</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   value={editedProfile?.company || ''}
                   onChangeText={(text) =>
                     setEditedProfile(prev => prev ? { ...prev, company: text } : null)
                   }
                   placeholder="Enter your company"
-                  placeholderTextColor={Colors.light.gray[400]}
+                  placeholderTextColor={colors.gray[400]}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Job Title</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Job Title</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
                   value={editedProfile?.jobTitle || ''}
                   onChangeText={(text) =>
                     setEditedProfile(prev => prev ? { ...prev, jobTitle: text } : null)
                   }
                   placeholder="Enter your job title"
-                  placeholderTextColor={Colors.light.gray[400]}
+                  placeholderTextColor={colors.gray[400]}
                 />
               </View>
             </View>
@@ -264,7 +265,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Preferences Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Preferences</Text>
             {editMode === 'preferences' ? (
@@ -453,7 +454,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Account Actions */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={styles.sectionTitle}>Account</Text>
           <TouchableOpacity style={styles.dangerButton}>
             <Trash2 color={Colors.light.error} size={20} />

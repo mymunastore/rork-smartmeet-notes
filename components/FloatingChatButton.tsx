@@ -10,8 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MessageCircle, X, Sparkles } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
-import Colors from '@/constants/colors';
 import { useChat } from '@/hooks/use-chat-store';
+import { useTheme } from '@/hooks/use-theme';
 
 interface FloatingChatButtonProps {
   onPress?: () => void;
@@ -20,6 +20,7 @@ interface FloatingChatButtonProps {
 
 export default function FloatingChatButton({ onPress, style }: FloatingChatButtonProps) {
   const router = useRouter();
+  const { colors } = useTheme();
   const { unreadCount } = useChat();
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -97,18 +98,18 @@ export default function FloatingChatButton({ onPress, style }: FloatingChatButto
       {isExpanded && (
         <Animated.View style={styles.tooltip}>
           <LinearGradient
-            colors={['rgba(255,255,255,0.95)', 'rgba(247, 250, 252, 0.98)']}
+            colors={[`${colors.background}F2`, `${colors.background}FA`]}
             style={styles.tooltipGradient}
           >
             <View style={styles.tooltipContent}>
-              <Sparkles size={16} color={Colors.light.nature.sage} />
-              <Text style={styles.tooltipText}>Ask AI Assistant</Text>
+              <Sparkles size={16} color={colors.nature.sage} />
+              <Text style={[styles.tooltipText, { color: colors.text }]}>Ask AI Assistant</Text>
             </View>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={toggleExpanded}
             >
-              <X size={14} color={Colors.light.gray[400]} />
+              <X size={14} color={colors.gray[400]} />
             </TouchableOpacity>
           </LinearGradient>
         </Animated.View>
@@ -122,12 +123,12 @@ export default function FloatingChatButton({ onPress, style }: FloatingChatButto
         testID="floating-chat-button"
       >
         <LinearGradient
-          colors={[Colors.light.nature.sage, Colors.light.nature.ocean]}
+          colors={[colors.nature.sage, colors.nature.ocean]}
           style={styles.buttonGradient}
         >
           <MessageCircle size={24} color="#fff" />
           {unreadCount > 0 && (
-            <View style={styles.badge}>
+            <View style={[styles.badge, { backgroundColor: colors.nature.coral }]}>
               <Text style={styles.badgeText}>
                 {unreadCount > 9 ? '9+' : unreadCount.toString()}
               </Text>
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
   tooltip: {
     marginBottom: 12,
     borderRadius: 12,
-    shadowColor: Colors.light.gray[400],
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -173,7 +174,6 @@ const styles = StyleSheet.create({
   tooltipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   closeButton: {
     padding: 4,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    shadowColor: Colors.light.nature.sage,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: Colors.light.nature.coral,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
