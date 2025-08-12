@@ -8,6 +8,7 @@ import { UserProfileProvider } from "@/hooks/use-user-profile";
 import { useBackgroundProcessing } from "@/hooks/use-background-processing";
 import { ChatProvider } from "@/hooks/use-chat-store";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { AuthProvider } from "@/hooks/use-auth";
 import { trpc, trpcClient } from "@/lib/trpc";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -49,6 +50,19 @@ function RootLayoutNav() {
           presentation: "modal",
         }} 
       />
+      <Stack.Screen 
+        name="auth" 
+        options={{ 
+          headerShown: false,
+          gestureEnabled: false,
+        }} 
+      />
+      <Stack.Screen 
+        name="two-factor" 
+        options={{ 
+          headerShown: false,
+        }} 
+      />
     </Stack>
   );
 }
@@ -62,15 +76,17 @@ export default function RootLayout() {
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <UserProfileProvider>
-            <NotesProvider>
-              <ChatProvider>
+          <AuthProvider>
+            <UserProfileProvider>
+              <NotesProvider>
+                <ChatProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   <RootLayoutNav />
                 </GestureHandlerRootView>
-              </ChatProvider>
-            </NotesProvider>
-          </UserProfileProvider>
+                </ChatProvider>
+              </NotesProvider>
+            </UserProfileProvider>
+          </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>
