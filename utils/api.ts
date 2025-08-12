@@ -28,6 +28,11 @@ async function withRetry<T>(
     } catch (error) {
       lastError = error as Error;
       
+      // Don't retry on abort errors (timeout)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+      
       if (attempt === config.maxRetries) {
         throw lastError;
       }
@@ -80,7 +85,10 @@ export async function translateText(
       
       // Create timeout controller for cross-platform compatibility
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutId = setTimeout(() => {
+        console.log('Translation request timeout after 30 seconds');
+        controller.abort();
+      }, 30000);
       
       const response = await fetch("https://toolkit.rork.com/text/llm/", {
         method: "POST",
@@ -189,7 +197,10 @@ export async function transcribeAudio(
       
       // Create timeout controller for cross-platform compatibility
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      const timeoutId = setTimeout(() => {
+        console.log('Transcription request timeout after 60 seconds');
+        controller.abort();
+      }, 60000);
       
       const response = await fetch("https://toolkit.rork.com/stt/transcribe/", {
         method: "POST",
@@ -288,7 +299,10 @@ export async function generateSummary(
       
       // Create timeout controller for cross-platform compatibility
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutId = setTimeout(() => {
+        console.log('Summary request timeout after 30 seconds');
+        controller.abort();
+      }, 30000);
       
       const response = await fetch("https://toolkit.rork.com/text/llm/", {
         method: "POST",
@@ -340,10 +354,16 @@ export async function checkAPIHealth(): Promise<{
   try {
     // Create timeout controllers for cross-platform compatibility
     const transcriptionController = new AbortController();
-    const transcriptionTimeoutId = setTimeout(() => transcriptionController.abort(), 5000);
+    const transcriptionTimeoutId = setTimeout(() => {
+      console.log('Health check transcription timeout after 5 seconds');
+      transcriptionController.abort();
+    }, 5000);
     
     const summaryController = new AbortController();
-    const summaryTimeoutId = setTimeout(() => summaryController.abort(), 5000);
+    const summaryTimeoutId = setTimeout(() => {
+      console.log('Health check summary timeout after 5 seconds');
+      summaryController.abort();
+    }, 5000);
     
     // Test transcription endpoint with a simple request
     const transcriptionResponse = await fetch("https://toolkit.rork.com/stt/transcribe/", {

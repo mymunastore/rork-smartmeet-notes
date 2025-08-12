@@ -110,7 +110,10 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
 
         // Create timeout controller for cross-platform compatibility
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const timeoutId = setTimeout(() => {
+          console.log('Request timeout after 30 seconds');
+          controller.abort();
+        }, 30000);
         
         const response = await fetch('https://toolkit.rork.com/text/llm/', {
           method: 'POST',
@@ -140,10 +143,19 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
       } catch (error) {
         console.error(`Chat API attempt ${attempt} failed:`, error);
         
-        if (attempt < maxRetries && error instanceof Error && error.message.includes('500')) {
-          console.log(`Retrying chat request (attempt ${attempt + 1}/${maxRetries})...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
-          return makeAPIRequest(attempt + 1);
+        // Handle different types of errors
+        if (error instanceof Error) {
+          // Don't retry on abort errors (timeout)
+          if (error.name === 'AbortError') {
+            throw new Error('Request timed out. Please try again with a shorter message.');
+          }
+          
+          // Retry on server errors
+          if (attempt < maxRetries && (error.message.includes('500') || error.message.includes('502') || error.message.includes('503'))) {
+            console.log(`Retrying chat request (attempt ${attempt + 1}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+            return makeAPIRequest(attempt + 1);
+          }
         }
         
         throw error;
@@ -175,12 +187,14 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
       let errorMessage = "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.";
       
       if (error instanceof Error) {
-        if (error.message.includes('500')) {
+        if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) {
           errorMessage = "The AI service is temporarily unavailable. Please try again in a few minutes.";
-        } else if (error.message.includes('timeout')) {
+        } else if (error.message.includes('timeout') || error.name === 'AbortError') {
           errorMessage = "The request timed out. Please try again with a shorter message.";
-        } else if (error.message.includes('network')) {
+        } else if (error.message.includes('network') || error.message.includes('Failed to fetch')) {
           errorMessage = "Network connection issue. Please check your internet connection and try again.";
+        } else if (error.message.includes('400')) {
+          errorMessage = "Invalid request. Please try rephrasing your message.";
         }
       }
       
