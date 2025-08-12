@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Appearance } from 'react-native';
 import { safeStorage } from '@/utils/safe-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import Colors from '@/constants/colors';
@@ -12,12 +13,16 @@ const THEME_STORAGE_KEY = '@scribe_theme_mode';
 const COLOR_SCHEME_STORAGE_KEY = '@scribe_color_scheme';
 
 const getSystemTheme = (): boolean => {
-  // In a real app, you'd use Appearance.getColorScheme() from react-native
-  // For now, we'll default to light mode
-  return false;
+  try {
+    const colorScheme = Appearance.getColorScheme();
+    return colorScheme === 'dark';
+  } catch (error) {
+    console.warn('Failed to get system theme:', error);
+    return false;
+  }
 };
 
-const generateColorScheme = (scheme: ColorScheme, baseColors: typeof Colors.light) => {
+const generateColorScheme = (scheme: ColorScheme, baseColors: typeof Colors.light | typeof Colors.dark) => {
   switch (scheme) {
     case 'nature':
       return {
@@ -85,7 +90,15 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   // Update isDark based on theme mode
   useEffect(() => {
     if (themeMode === 'auto') {
-      setIsDark(getSystemTheme());
+      const systemIsDark = getSystemTheme();
+      setIsDark(systemIsDark);
+      
+      // Listen for system theme changes
+      const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+        setIsDark(colorScheme === 'dark');
+      });
+      
+      return () => subscription?.remove();
     } else {
       setIsDark(themeMode === 'dark');
     }
@@ -110,7 +123,10 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   }, []);
 
   // Generate colors based on current theme and color scheme
-  const colors = useMemo(() => generateColorScheme(colorScheme, Colors.light), [colorScheme]);
+  const colors = useMemo(() => {
+    const baseColors = isDark ? Colors.dark : Colors.light;
+    return generateColorScheme(colorScheme, baseColors);
+  }, [colorScheme, isDark]);
 
   return useMemo(() => ({
     themeMode,

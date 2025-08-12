@@ -35,4 +35,40 @@ export default {
       sky: "#87CEEB", // Sky blue
     },
   },
+  dark: {
+    // Dark nature-inspired color palette
+    text: "#F7FAFC", // Light text on dark
+    background: "#1A202C", // Night forest
+    primary: "#68D391", // Bright forest green
+    secondary: "#63B3ED", // Bright mountain lake blue
+    accent: "#F6AD55", // Bright sunset orange
+    card: "#2D3748", // Dark card background
+    border: "#4A5568", // Dark border
+    success: "#68D391", // Bright leaf green
+    error: "#FC8181", // Bright autumn red
+    warning: "#F6AD55", // Bright golden hour
+    // Dark nature grays
+    gray: {
+      100: "#1A202C", // Darkest
+      200: "#2D3748", // Very dark
+      300: "#4A5568", // Dark
+      400: "#718096", // Medium dark
+      500: "#A0AEC0", // Medium
+      600: "#CBD5E0", // Medium light
+      700: "#E2E8F0", // Light
+      800: "#EDF2F7", // Very light
+      900: "#F7FAFC", // Lightest
+    },
+    // Dark nature colors
+    nature: {
+      sage: "#B8D4A3", // Bright sage green
+      moss: "#A8CCA8", // Bright moss green
+      ocean: "#6BA6CD", // Bright ocean blue
+      sand: "#F7E7C1", // Bright beach sand
+      coral: "#FF9999", // Bright coral pink
+      lavender: "#C9A9DD", // Bright lavender purple
+      earth: "#A0522D", // Bright earth brown
+      sky: "#98D8F4", // Bright sky blue
+    },
+  },
 };
