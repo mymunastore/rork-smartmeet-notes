@@ -78,14 +78,20 @@ export async function translateText(
         }
       ];
       
+      // Create timeout controller for cross-platform compatibility
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
       const response = await fetch("https://toolkit.rork.com/text/llm/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ messages }),
-        signal: AbortSignal.timeout(30000) // 30 second timeout
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
@@ -181,11 +187,17 @@ export async function transcribeAudio(
         formData.append("language", language);
       }
       
+      // Create timeout controller for cross-platform compatibility
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
       const response = await fetch("https://toolkit.rork.com/stt/transcribe/", {
         method: "POST",
         body: formData,
-        signal: AbortSignal.timeout(60000) // 60 second timeout
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`Transcription failed: ${response.status} ${response.statusText}`);
@@ -274,15 +286,20 @@ export async function generateSummary(
         }
       ];
       
+      // Create timeout controller for cross-platform compatibility
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
       const response = await fetch("https://toolkit.rork.com/text/llm/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ messages }),
-        // Add timeout
-        signal: AbortSignal.timeout(30000) // 30 second timeout
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
@@ -321,17 +338,28 @@ export async function checkAPIHealth(): Promise<{
   const startTime = Date.now();
   
   try {
+    // Create timeout controllers for cross-platform compatibility
+    const transcriptionController = new AbortController();
+    const transcriptionTimeoutId = setTimeout(() => transcriptionController.abort(), 5000);
+    
+    const summaryController = new AbortController();
+    const summaryTimeoutId = setTimeout(() => summaryController.abort(), 5000);
+    
     // Test transcription endpoint with a simple request
     const transcriptionResponse = await fetch("https://toolkit.rork.com/stt/transcribe/", {
       method: "OPTIONS",
-      signal: AbortSignal.timeout(5000)
+      signal: transcriptionController.signal,
     });
+    
+    clearTimeout(transcriptionTimeoutId);
     
     // Test summary endpoint
     const summaryResponse = await fetch("https://toolkit.rork.com/text/llm/", {
       method: "OPTIONS",
-      signal: AbortSignal.timeout(5000)
+      signal: summaryController.signal,
     });
+    
+    clearTimeout(summaryTimeoutId);
     
     const latency = Date.now() - startTime;
     

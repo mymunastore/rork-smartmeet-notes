@@ -108,14 +108,20 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
           },
         ];
 
+        // Create timeout controller for cross-platform compatibility
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
         const response = await fetch('https://toolkit.rork.com/text/llm/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ messages: apiMessages }),
-          signal: AbortSignal.timeout(30000),
+          signal: controller.signal,
         });
+        
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           const errorText = await response.text();
