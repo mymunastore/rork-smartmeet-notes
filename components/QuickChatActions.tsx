@@ -1,1 +1,154 @@
-import React from 'react';\nimport {\n  View,\n  Text,\n  StyleSheet,\n  TouchableOpacity,\n  Alert,\n} from 'react-native';\nimport { LinearGradient } from 'expo-linear-gradient';\nimport { MessageCircle, Sparkles, HelpCircle, Lightbulb } from 'lucide-react-native';\nimport { useRouter } from 'expo-router';\n\nimport Colors from '@/constants/colors';\nimport { useChat } from '@/hooks/use-chat-store';\nimport { Note } from '@/types/note';\n\ninterface QuickChatActionsProps {\n  note?: Note;\n  style?: any;\n}\n\nexport default function QuickChatActions({ note, style }: QuickChatActionsProps) {\n  const router = useRouter();\n  const { addSystemMessage } = useChat();\n\n  const askAboutNote = () => {\n    if (!note) return;\n    \n    const message = `I'd like to know more about this note: \"${note.title}\". ${note.summary ? `Summary: ${note.summary}` : ''} Can you help me understand the key points and suggest any follow-up actions?`;\n    \n    addSystemMessage(`User asked about note: \"${note.title}\"`);\n    router.push('/(tabs)/chat');\n  };\n\n  const getHelp = () => {\n    const message = \"I need help using Scribe AI. Can you guide me through the main features and how to get the most out of the app?\";\n    addSystemMessage(message);\n    router.push('/(tabs)/chat');\n  };\n\n  const getSuggestions = () => {\n    const message = note \n      ? `Based on my note \"${note.title}\", can you suggest some productivity tips or related actions I should consider?`\n      : \"Can you give me some productivity tips for better note-taking and meeting management?\";\n    \n    addSystemMessage(message);\n    router.push('/(tabs)/chat');\n  };\n\n  const openChat = () => {\n    router.push('/(tabs)/chat');\n  };\n\n  return (\n    <View style={[styles.container, style]}>\n      <Text style={styles.title}>🤖 AI Assistant</Text>\n      <Text style={styles.subtitle}>Get instant help and insights</Text>\n      \n      <View style={styles.actionsGrid}>\n        {note && (\n          <TouchableOpacity style={styles.actionButton} onPress={askAboutNote}>\n            <LinearGradient\n              colors={[Colors.light.nature.sage, Colors.light.nature.ocean]}\n              style={styles.actionGradient}\n            >\n              <MessageCircle size={20} color=\"#fff\" />\n              <Text style={styles.actionText}>Ask About Note</Text>\n            </LinearGradient>\n          </TouchableOpacity>\n        )}\n        \n        <TouchableOpacity style={styles.actionButton} onPress={getHelp}>\n          <LinearGradient\n            colors={[Colors.light.primary, Colors.light.secondary]}\n            style={styles.actionGradient}\n          >\n            <HelpCircle size={20} color=\"#fff\" />\n            <Text style={styles.actionText}>Get Help</Text>\n          </LinearGradient>\n        </TouchableOpacity>\n        \n        <TouchableOpacity style={styles.actionButton} onPress={getSuggestions}>\n          <LinearGradient\n            colors={[Colors.light.nature.coral, '#FF6B9D']}\n            style={styles.actionGradient}\n          >\n            <Lightbulb size={20} color=\"#fff\" />\n            <Text style={styles.actionText}>Get Tips</Text>\n          </LinearGradient>\n        </TouchableOpacity>\n        \n        <TouchableOpacity style={styles.actionButton} onPress={openChat}>\n          <LinearGradient\n            colors={['#8B5CF6', '#A855F7']}\n            style={styles.actionGradient}\n          >\n            <Sparkles size={20} color=\"#fff\" />\n            <Text style={styles.actionText}>Open Chat</Text>\n          </LinearGradient>\n        </TouchableOpacity>\n      </View>\n    </View>\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    backgroundColor: '#fff',\n    borderRadius: 16,\n    padding: 20,\n    marginVertical: 16,\n    shadowColor: Colors.light.gray[300],\n    shadowOffset: { width: 0, height: 2 },\n    shadowOpacity: 0.1,\n    shadowRadius: 8,\n    elevation: 3,\n  },\n  title: {\n    fontSize: 18,\n    fontWeight: '700',\n    color: Colors.light.text,\n    marginBottom: 4,\n  },\n  subtitle: {\n    fontSize: 14,\n    color: Colors.light.gray[600],\n    marginBottom: 16,\n  },\n  actionsGrid: {\n    flexDirection: 'row',\n    flexWrap: 'wrap',\n    gap: 12,\n  },\n  actionButton: {\n    flex: 1,\n    minWidth: '45%',\n    borderRadius: 12,\n    overflow: 'hidden',\n  },\n  actionGradient: {\n    paddingVertical: 16,\n    paddingHorizontal: 12,\n    alignItems: 'center',\n    gap: 8,\n  },\n  actionText: {\n    fontSize: 12,\n    fontWeight: '600',\n    color: '#fff',\n    textAlign: 'center',\n  },\n});
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MessageCircle, Sparkles, HelpCircle, Lightbulb } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+
+import Colors from '@/constants/colors';
+import { useChat } from '@/hooks/use-chat-store';
+import { Note } from '@/types/note';
+
+interface QuickChatActionsProps {
+  note?: Note;
+  style?: any;
+}
+
+export default function QuickChatActions({ note, style }: QuickChatActionsProps) {
+  const router = useRouter();
+  const { addSystemMessage } = useChat();
+
+  const askAboutNote = () => {
+    if (!note) return;
+    
+    addSystemMessage(`User asked about note: "${note.title}"`);
+    router.push('/(tabs)/chat');
+  };
+
+  const getHelp = () => {
+    addSystemMessage("I need help using Scribe AI. Can you guide me through the main features and how to get the most out of the app?");
+    router.push('/(tabs)/chat');
+  };
+
+  const getSuggestions = () => {
+    const message = note 
+      ? `Based on my note "${note.title}", can you suggest some productivity tips or related actions I should consider?`
+      : "Can you give me some productivity tips for better note-taking and meeting management?";
+    
+    addSystemMessage(message);
+    router.push('/(tabs)/chat');
+  };
+
+  const openChat = () => {
+    router.push('/(tabs)/chat');
+  };
+
+  return (
+    <View style={[styles.container, style]}>
+      <Text style={styles.title}>🤖 AI Assistant</Text>
+      <Text style={styles.subtitle}>Get instant help and insights</Text>
+      
+      <View style={styles.actionsGrid}>
+        {note && (
+          <TouchableOpacity style={styles.actionButton} onPress={askAboutNote}>
+            <LinearGradient
+              colors={[Colors.light.primary, Colors.light.secondary]}
+              style={styles.gradientButton}
+            >
+              <MessageCircle size={20} color="white" />
+              <Text style={styles.buttonText}>Ask About Note</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+        
+        <TouchableOpacity style={styles.actionButton} onPress={getSuggestions}>
+          <LinearGradient
+            colors={[Colors.light.accent, Colors.light.primary]}
+            style={styles.gradientButton}
+          >
+            <Lightbulb size={20} color="white" />
+            <Text style={styles.buttonText}>Get Suggestions</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionButton} onPress={getHelp}>
+          <LinearGradient
+            colors={[Colors.light.secondary, Colors.light.accent]}
+            style={styles.gradientButton}
+          >
+            <HelpCircle size={20} color="white" />
+            <Text style={styles.buttonText}>Get Help</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionButton} onPress={openChat}>
+          <LinearGradient
+            colors={[Colors.light.primary, Colors.light.accent]}
+            style={styles.gradientButton}
+          >
+            <Sparkles size={20} color="white" />
+            <Text style={styles.buttonText}>Open Chat</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.light.text,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  actionButton: {
+    width: '48%',
+    marginBottom: 12,
+  },
+  gradientButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});
