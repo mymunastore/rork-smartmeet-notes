@@ -7,6 +7,7 @@ import { NotesProvider } from "@/hooks/use-notes-store";
 import { UserProfileProvider } from "@/hooks/use-user-profile";
 import { useBackgroundProcessing } from "@/hooks/use-background-processing";
 import { ChatProvider } from "@/hooks/use-chat-store";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { trpc, trpcClient } from "@/lib/trpc";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -58,15 +59,17 @@ export default function RootLayout() {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <UserProfileProvider>
-          <NotesProvider>
-            <ChatProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <RootLayoutNav />
-              </GestureHandlerRootView>
-            </ChatProvider>
-          </NotesProvider>
-        </UserProfileProvider>
+        <ThemeProvider>
+          <UserProfileProvider>
+            <NotesProvider>
+              <ChatProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <RootLayoutNav />
+                </GestureHandlerRootView>
+              </ChatProvider>
+            </NotesProvider>
+          </UserProfileProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>
   );
