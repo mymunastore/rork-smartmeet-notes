@@ -1,10 +1,11 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { FileText, Star, Clock, AlertCircle, Languages } from "lucide-react-native";
+import { FileText, Star, Clock, AlertCircle, Languages, Zap } from "lucide-react-native";
 import React, { memo, useCallback, useMemo } from "react";
 import Colors from "@/constants/colors";
 import { Note } from "@/types/note";
 import { SUPPORTED_LANGUAGES } from "@/constants/languages";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface NoteCardProps {
   note: Note;
@@ -16,10 +17,18 @@ const NoteCard = memo(function NoteCard({ note }: NoteCardProps) {
   // Memoize formatted values to prevent recalculation
   const formattedDate = useMemo(() => {
     const date = new Date(note.createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Today';
+    if (diffDays === 2) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
     });
   }, [note.createdAt]);
 
@@ -32,6 +41,27 @@ const NoteCard = memo(function NoteCard({ note }: NoteCardProps) {
   const handlePress = useCallback(() => {
     router.push(`/note/${note.id}`);
   }, [router, note.id]);
+  
+  // Memoize preview text for better performance
+  const previewText = useMemo(() => {
+    if (note.summary) {
+      return note.summary.substring(0, 120) + (note.summary.length > 120 ? '...' : '');
+    }
+    if (note.transcript) {
+      return note.transcript.substring(0, 120) + (note.transcript.length > 120 ? '...' : '');
+    }
+    return 'Processing...';
+  }, [note.summary, note.transcript]);
+  
+  // Memoize priority color
+  const priorityColor = useMemo(() => {
+    switch (note.priority) {
+      case 'high': return Colors.light.nature.coral;
+      case 'medium': return Colors.light.nature.sage;
+      case 'low': return Colors.light.gray[400];
+      default: return Colors.light.nature.sage;
+    }
+  }, [note.priority]);
   
   // Determine card status and styling
   const cardStatus = useMemo(() => {
@@ -66,58 +96,88 @@ const NoteCard = memo(function NoteCard({ note }: NoteCardProps) {
       style={cardStyle}
       onPress={handlePress}
       testID={`note-card-${note.id}`}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
+      {/* Priority indicator */}
+      <View style={[styles.priorityIndicator, { backgroundColor: priorityColor }]} />
+      
       <View style={styles.iconContainer}>
-        <FileText color={Colors.light.nature.ocean} size={24} />
+        {note.isStarred ? (
+          <LinearGradient
+            colors={[Colors.light.accent, Colors.light.nature.coral]}
+            style={styles.iconGradient}
+          >
+            <Star color="#fff" size={20} fill="#fff" />
+          </LinearGradient>
+        ) : (
+          <FileText color={Colors.light.nature.ocean} size={24} />
+        )}
       </View>
+      
       <View style={styles.content}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>
             {note.title}
           </Text>
-          {statusIcon && (
-            <View style={styles.statusIconContainer}>
-              {statusIcon}
-            </View>
-          )}
+          <View style={styles.statusContainer}>
+            {note.priority === 'high' && (
+              <Zap size={14} color={Colors.light.nature.coral} fill={Colors.light.nature.coral} />
+            )}
+            {statusIcon && <View>{statusIcon}</View>}
+          </View>
         </View>
+        
+        {/* Preview text */}
+        <Text style={styles.previewText} numberOfLines={2}>
+          {previewText}
+        </Text>
         
         <View style={styles.metaContainer}>
           <Text style={styles.date}>{formattedDate}</Text>
           <View style={styles.separator} />
           <Text style={styles.duration}>{formattedDuration}</Text>
+          
+          {/* Tags indicator */}
           {note.tags.length > 0 && (
             <View style={styles.tagsContainer}>
-              <Text style={styles.tagCount}>+{note.tags.length}</Text>
+              <Text style={styles.tagCount}>{note.tags.length}</Text>
             </View>
           )}
+          
           {/* Translation indicator */}
           {note.isTranslated && note.detectedLanguage && (
             <View style={styles.translationIndicator}>
-              <Languages size={10} color={Colors.light.nature.sage} />
+              <Languages size={10} color={"#fff"} />
               <Text style={styles.translationText}>
-                {SUPPORTED_LANGUAGES.find(lang => lang.code === note.detectedLanguage)?.name || note.detectedLanguage.toUpperCase()}
+                {SUPPORTED_LANGUAGES.find(lang => lang.code === note.detectedLanguage)?.flag || '🌐'}
               </Text>
             </View>
           )}
         </View>
         
-        {/* Progress indicator for processing notes */}
+        {/* Enhanced progress indicator for processing notes */}
         {note.isProcessing && (
           <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '60%' }]} />
-            </View>
-            <Text style={styles.progressText}>Processing...</Text>
+            <LinearGradient
+              colors={[Colors.light.nature.coral, Colors.light.accent]}
+              style={styles.progressBar}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <View style={[styles.progressFill, { width: '70%' }]} />
+            </LinearGradient>
+            <Text style={styles.progressText}>AI Processing...</Text>
           </View>
         )}
         
         {/* Error message for failed processing */}
         {note.processingError && (
-          <Text style={styles.errorMessage} numberOfLines={1}>
-            {note.processingError}
-          </Text>
+          <View style={styles.errorContainer}>
+            <AlertCircle size={12} color={Colors.light.error} />
+            <Text style={styles.errorMessage} numberOfLines={1}>
+              {note.processingError}
+            </Text>
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -129,18 +189,29 @@ export default NoteCard;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.light.card,
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
     flexDirection: "row",
     alignItems: "flex-start",
     borderWidth: 1,
     borderColor: Colors.light.border,
     shadowColor: Colors.light.nature.sage,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  priorityIndicator: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
   },
   starredCard: {
     borderColor: Colors.light.accent,
@@ -155,13 +226,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF9F5',
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     backgroundColor: Colors.light.nature.sky,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
+    marginLeft: 4,
+  },
+  iconGradient: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
@@ -173,15 +252,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "700",
     color: Colors.light.text,
     flex: 1,
     marginRight: 8,
+    marginBottom: 4,
   },
-  statusIconContainer: {
+  previewText: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  statusContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
   },
   metaContainer: {
     flexDirection: "row",
@@ -219,43 +306,50 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   progressContainer: {
-    marginTop: 8,
-    gap: 4,
+    marginTop: 12,
+    gap: 6,
   },
   progressBar: {
-    height: 3,
+    height: 4,
     backgroundColor: Colors.light.gray[200],
     borderRadius: 2,
     overflow: 'hidden',
+    position: 'relative',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.light.nature.coral,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderRadius: 2,
   },
   progressText: {
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.light.nature.coral,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 4,
   },
   errorMessage: {
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.light.error,
     fontStyle: 'italic',
-    marginTop: 4,
+    flex: 1,
   },
   translationIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.light.nature.sage,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 8,
-    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 3,
     marginLeft: 8,
   },
   translationText: {
-    fontSize: 9,
+    fontSize: 12,
     color: '#fff',
     fontWeight: '600',
   },

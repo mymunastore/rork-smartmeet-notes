@@ -28,6 +28,8 @@ class PerformanceMonitor {
   private memorySnapshots: MemoryUsage[] = [];
   private maxMetricHistory = 100; // Limit memory usage
   private isEnabled = __DEV__; // Only enable in development
+  private batchSize = 10; // Batch operations for better performance
+  private operationQueue: { label: string; startTime: number; endTime?: number }[] = [];
 
   startTimer(label: string): void {
     if (!this.isEnabled) return;
@@ -45,6 +47,13 @@ class PerformanceMonitor {
 
     const duration = performance.now() - startTime;
     this.timers.delete(label);
+
+    // Batch operations for better performance
+    this.operationQueue.push({ label, startTime, endTime: performance.now() });
+    
+    if (this.operationQueue.length >= this.batchSize) {
+      this.processBatch();
+    }
 
     // Store metric with history limit
     if (!this.metrics.has(label)) {
@@ -64,6 +73,30 @@ class PerformanceMonitor {
     }
     
     return duration;
+  }
+
+  private processBatch(): void {
+    // Process batched operations for analytics
+    const batch = this.operationQueue.splice(0, this.batchSize);
+    
+    // Group by operation type for better insights
+    const grouped = batch.reduce((acc, op) => {
+      const category = op.label.split('-')[0];
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(op);
+      return acc;
+    }, {} as Record<string, typeof batch>);
+    
+    // Log batch summary for critical operations
+    Object.entries(grouped).forEach(([category, operations]) => {
+      if (operations.length > 3) {
+        const avgDuration = operations.reduce((sum, op) => 
+          sum + ((op.endTime || 0) - op.startTime), 0) / operations.length;
+        if (avgDuration > 50) {
+          console.log(`📊 ${category} batch: ${operations.length} ops, avg ${avgDuration.toFixed(2)}ms`);
+        }
+      }
+    });
   }
 
   measureMemory(): MemoryUsage | null {
@@ -175,23 +208,35 @@ class PerformanceMonitor {
     this.isEnabled = enabled;
   }
 
-  // Get performance summary
+  // Get performance summary with enhanced insights
   getSummary(): {
     totalOperations: number;
     averageResponseTime: number;
     slowOperations: number;
     memoryUsage?: MemoryUsage;
+    criticalOperations: string[];
+    performanceScore: number;
   } {
     const metrics = this.getMetrics();
     const totalOps = Object.values(metrics).reduce((sum, metric) => sum + metric.count, 0);
     const avgTime = Object.values(metrics).reduce((sum, metric) => sum + metric.average, 0) / Object.keys(metrics).length || 0;
     const slowOps = this.getSlowOperations().length;
     
+    // Identify critical operations that need optimization
+    const criticalOperations = Object.entries(metrics)
+      .filter(([, metric]) => metric.p95 > 200 || metric.average > 100)
+      .map(([label]) => label);
+    
+    // Calculate performance score (0-100)
+    const performanceScore = Math.max(0, 100 - (avgTime / 10) - (slowOps * 5));
+    
     return {
       totalOperations: totalOps,
       averageResponseTime: avgTime,
       slowOperations: slowOps,
-      memoryUsage: this.memorySnapshots[this.memorySnapshots.length - 1]
+      memoryUsage: this.memorySnapshots[this.memorySnapshots.length - 1],
+      criticalOperations,
+      performanceScore: Math.round(performanceScore)
     };
   }
 }

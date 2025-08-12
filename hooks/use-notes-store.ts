@@ -36,10 +36,12 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
     try {
       setIsLoading(true);
       
-      // Try to load from cache first
-      const cachedNotes = await cacheManager.get<Note[]>('notes-data');
-      const cachedProjects = await cacheManager.get<Project[]>('projects-data');
-      const cachedSettings = await cacheManager.get<NotificationSettings>('settings-data');
+      // Try to load from cache first with parallel requests
+      const [cachedNotes, cachedProjects, cachedSettings] = await Promise.all([
+        cacheManager.get<Note[]>('notes-data'),
+        cacheManager.get<Project[]>('projects-data'),
+        cacheManager.get<NotificationSettings>('settings-data')
+      ]);
       
       if (cachedNotes && cachedProjects && cachedSettings) {
         console.log('📦 Loading data from cache');
@@ -51,7 +53,7 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
         return;
       }
       
-      // Load from AsyncStorage if cache miss
+      // Load from AsyncStorage if cache miss with parallel requests
       console.log('💾 Loading data from storage');
       const [storedNotes, storedProjects, storedSettings] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY),
@@ -59,51 +61,95 @@ export const [NotesProvider, useNotes] = createContextHook(() => {
         AsyncStorage.getItem(SETTINGS_STORAGE_KEY)
       ]);
       
+      // Process data in parallel
+      const processingPromises: Promise<void>[] = [];
+      
       // Process notes
       if (storedNotes) {
-        const parsedNotes = JSON.parse(storedNotes);
-        // Migrate old notes to new format
-        const migratedNotes = parsedNotes.map((note: any) => ({
-          ...note,
-          updatedAt: note.updatedAt || note.createdAt,
-          tags: note.tags || [],
-          isStarred: note.isStarred || false,
-          meetingType: note.meetingType || 'other',
-          priority: note.priority || 'medium',
-        }));
-        setNotes(migratedNotes);
-        
-        // Cache the processed notes
-        await cacheManager.set('notes-data', migratedNotes, { ttl: 10 * 60 * 1000 }); // 10 minutes
-        
-        // Check for notes that were processing when app was closed
-        const processingNotes = migratedNotes.filter((note: Note) => note.isProcessing);
-        if (processingNotes.length > 0) {
-          console.log(`🔄 Found ${processingNotes.length} notes that were processing`);
-          processingNotes.forEach((note: Note) => {
-            if (note.recordingUri && !note.transcript) {
-              console.log(`▶️ Resuming processing for note: ${note.id}`);
-              setProcessingQueue(prev => new Set([...prev, note.id]));
+        processingPromises.push((async () => {
+          const parsedNotes = JSON.parse(storedNotes);
+          // Migrate old notes to new format with better performance
+          const migratedNotes = parsedNotes.map((note: any) => {
+            const migrated = {
+              ...note,
+              updatedAt: note.updatedAt || note.createdAt,
+              tags: note.tags || [],
+              isStarred: note.isStarred || false,
+              meetingType: note.meetingType || 'other',
+              priority: note.priority || 'medium',
+            };
+            
+            // Clean up large data for completed notes to save memory
+            if (!migrated.isProcessing && migrated.transcript && migrated.summary) {
+              delete migrated.recordingUri; // Remove large audio data
             }
+            
+            return migrated;
           });
-        }
+          
+          setNotes(migratedNotes);
+          
+          // Cache with longer TTL for better performance
+          await cacheManager.set('notes-data', migratedNotes, { 
+            ttl: 30 * 60 * 1000, // 30 minutes
+            persistToDisk: true 
+          });
+          
+          // Resume processing for incomplete notes
+          const processingNotes = migratedNotes.filter((note: Note) => note.isProcessing);
+          if (processingNotes.length > 0) {
+            console.log(`🔄 Found ${processingNotes.length} notes that were processing`);
+            const processingIds = new Set<string>();
+            processingNotes.forEach((note: Note) => {
+              if (note.recordingUri && !note.transcript) {
+                console.log(`▶️ Resuming processing for note: ${note.id}`);
+                processingIds.add(note.id);
+              }
+            });
+            setProcessingQueue(prev => new Set([...prev, ...processingIds]));
+          }
+        })());
       }
       
       // Process projects
       if (storedProjects) {
-        const parsedProjects = JSON.parse(storedProjects);
-        setProjects(parsedProjects);
-        await cacheManager.set('projects-data', parsedProjects, { ttl: 10 * 60 * 1000 });
+        processingPromises.push((async () => {
+          const parsedProjects = JSON.parse(storedProjects);
+          setProjects(parsedProjects);
+          await cacheManager.set('projects-data', parsedProjects, { 
+            ttl: 60 * 60 * 1000, // 1 hour
+            persistToDisk: true 
+          });
+        })());
       }
       
       // Process settings
       if (storedSettings) {
-        const parsedSettings = JSON.parse(storedSettings);
-        setNotificationSettings(parsedSettings);
-        await cacheManager.set('settings-data', parsedSettings, { ttl: 10 * 60 * 1000 });
+        processingPromises.push((async () => {
+          const parsedSettings = JSON.parse(storedSettings);
+          setNotificationSettings(parsedSettings);
+          await cacheManager.set('settings-data', parsedSettings, { 
+            ttl: 24 * 60 * 60 * 1000, // 24 hours
+            persistToDisk: true 
+          });
+        })());
       }
+      
+      // Wait for all processing to complete
+      await Promise.all(processingPromises);
+      
     } catch (error) {
       console.error("❌ Failed to load data:", error);
+      // Set default values on error
+      setNotes([]);
+      setProjects([]);
+      setNotificationSettings({
+        transcriptionComplete: true,
+        summaryReady: true,
+        processingError: true,
+        dailyDigest: false,
+        weeklyReport: false,
+      });
     } finally {
       setIsLoading(false);
       performanceMonitor.endTimer('notes-load');

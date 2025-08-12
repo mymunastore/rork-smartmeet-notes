@@ -20,6 +20,8 @@ class CacheManager {
   private defaultTTL = 5 * 60 * 1000; // 5 minutes
   private maxSize = 100;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
+  private compressionEnabled = true;
+  private memoryThreshold = 50 * 1024 * 1024; // 50MB threshold
 
   constructor() {
     // Start cleanup interval
@@ -36,18 +38,23 @@ class CacheManager {
     performanceMonitor.startTimer(`cache-set-${key}`);
     
     const ttl = options.ttl || this.defaultTTL;
+    
+    // Compress large data if enabled
+    let processedData = data;
+    if (this.compressionEnabled && this.shouldCompress(data)) {
+      processedData = this.compressData(data);
+    }
+    
     const item: CacheItem<T> = {
-      data,
+      data: processedData,
       timestamp: Date.now(),
       ttl,
       accessCount: 0,
       lastAccessed: Date.now()
     };
 
-    // Check if we need to evict items
-    if (this.cache.size >= (options.maxSize || this.maxSize)) {
-      this.evictLeastUsed();
-    }
+    // Check memory usage and evict if necessary
+    await this.checkMemoryAndEvict(options.maxSize || this.maxSize);
 
     this.cache.set(key, item);
 
@@ -61,6 +68,51 @@ class CacheManager {
     }
 
     performanceMonitor.endTimer(`cache-set-${key}`);
+  }
+
+  private shouldCompress<T>(data: T): boolean {
+    const dataSize = JSON.stringify(data).length;
+    return dataSize > 10000; // Compress if larger than 10KB
+  }
+
+  private compressData<T>(data: T): T {
+    // Simple compression for large objects
+    if (typeof data === 'object' && data !== null) {
+      const compressed = JSON.parse(JSON.stringify(data));
+      // Remove empty strings and null values to reduce size
+      this.removeEmptyValues(compressed);
+      return compressed;
+    }
+    return data;
+  }
+
+  private removeEmptyValues(obj: any): void {
+    Object.keys(obj).forEach(key => {
+      if (obj[key] === null || obj[key] === '' || obj[key] === undefined) {
+        delete obj[key];
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        this.removeEmptyValues(obj[key]);
+      }
+    });
+  }
+
+  private async checkMemoryAndEvict(maxSize: number): Promise<void> {
+    const currentSize = this.cache.size;
+    const memoryUsage = this.estimateMemoryUsage();
+    
+    // Evict if we exceed size or memory limits
+    if (currentSize >= maxSize || memoryUsage > this.memoryThreshold) {
+      const evictCount = Math.max(1, Math.ceil(currentSize * 0.25)); // Evict 25%
+      await this.evictLeastUsed(evictCount);
+    }
+  }
+
+  private estimateMemoryUsage(): number {
+    let totalSize = 0;
+    this.cache.forEach((item) => {
+      totalSize += JSON.stringify(item).length * 2; // Rough estimate (UTF-16)
+    });
+    return totalSize;
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -121,13 +173,16 @@ class CacheManager {
     this.clearPersistedCache();
   }
 
-  // Get cache statistics
+  // Get enhanced cache statistics
   getStats(): {
     size: number;
     hitRate: number;
     memoryUsage: number;
     oldestItem: number;
     newestItem: number;
+    averageAccessCount: number;
+    compressionRatio: number;
+    evictionRate: number;
   } {
     const items = Array.from(this.cache.values());
     const totalAccess = items.reduce((sum, item) => sum + item.accessCount, 0);
@@ -137,32 +192,64 @@ class CacheManager {
     const oldest = timestamps.length > 0 ? Math.min(...timestamps) : 0;
     const newest = timestamps.length > 0 ? Math.max(...timestamps) : 0;
     
-    // Rough memory usage calculation
-    const memoryUsage = JSON.stringify(Array.from(this.cache.entries())).length;
+    const memoryUsage = this.estimateMemoryUsage();
+    const averageAccessCount = items.length > 0 ? totalAccess / items.length : 0;
+    
+    // Calculate compression ratio (simplified)
+    const uncompressedSize = JSON.stringify(Array.from(this.cache.entries())).length;
+    const compressionRatio = memoryUsage > 0 ? uncompressedSize / memoryUsage : 1;
     
     return {
       size: this.cache.size,
       hitRate: totalAccess > 0 ? hits / totalAccess : 0,
       memoryUsage,
       oldestItem: oldest,
-      newestItem: newest
+      newestItem: newest,
+      averageAccessCount,
+      compressionRatio,
+      evictionRate: this.cache.size / this.maxSize
     };
   }
 
-  // Evict least recently used items
-  private evictLeastUsed(): void {
+  // Evict least recently used items with smart prioritization
+  private async evictLeastUsed(count?: number): Promise<void> {
     const items = Array.from(this.cache.entries());
     
-    // Sort by last accessed time (oldest first)
-    items.sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+    // Sort by priority: access count, last accessed time, and data size
+    items.sort(([, a], [, b]) => {
+      const scoreA = this.calculateEvictionScore(a);
+      const scoreB = this.calculateEvictionScore(b);
+      return scoreA - scoreB; // Lower score = higher priority for eviction
+    });
     
-    // Remove oldest 25% of items
-    const toRemove = Math.ceil(items.length * 0.25);
-    for (let i = 0; i < toRemove; i++) {
+    // Remove items with lowest priority
+    const toRemove = count || Math.ceil(items.length * 0.25);
+    const evictionPromises: Promise<void>[] = [];
+    
+    for (let i = 0; i < Math.min(toRemove, items.length); i++) {
       const [key] = items[i];
       this.cache.delete(key);
-      this.removeFromDisk(key);
+      evictionPromises.push(this.removeFromDisk(key));
     }
+    
+    await Promise.all(evictionPromises);
+    console.log(`🧹 Cache evicted ${Math.min(toRemove, items.length)} items`);
+  }
+
+  private calculateEvictionScore(item: CacheItem<any>): number {
+    const now = Date.now();
+    const age = now - item.timestamp;
+    const timeSinceAccess = now - item.lastAccessed;
+    const dataSize = JSON.stringify(item.data).length;
+    
+    // Lower score = higher priority for eviction
+    // Factors: low access count, old age, large size, not accessed recently
+    return (
+      item.accessCount * 1000 + // Heavily weight access count
+      Math.max(0, item.ttl - age) * 0.1 + // Remaining TTL
+      Math.max(0, 3600000 - timeSinceAccess) * 0.5 - // Recent access bonus
+      dataSize * 0.001 // Slight penalty for large items
+    );
   }
 
   // Load item from AsyncStorage
@@ -186,12 +273,13 @@ class CacheManager {
     return null;
   }
 
-  // Remove item from AsyncStorage
+  // Remove item from AsyncStorage with error handling
   private async removeFromDisk(key: string): Promise<void> {
     try {
       await AsyncStorage.removeItem(`cache_${key}`);
     } catch (error) {
       console.warn('Failed to remove cache item from disk:', error);
+      // Don't throw error to prevent blocking other operations
     }
   }
 
