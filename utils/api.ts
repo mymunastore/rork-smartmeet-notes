@@ -88,10 +88,18 @@ export async function translateText(
       });
       
       if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Translation API Error:', errorText);
         throw new Error(`Translation failed: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      
+      if (!data || !data.completion) {
+        console.error('Invalid translation response:', data);
+        throw new Error('Invalid response from translation service');
+      }
+      
       const translatedText = data.completion.trim();
       
       console.log("✅ Translation completed:", translatedText.substring(0, 50) + "...");
@@ -277,10 +285,18 @@ export async function generateSummary(
       });
       
       if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Summary API Error:', errorText);
         throw new Error(`Summary generation failed: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      
+      if (!data || !data.completion) {
+        console.error('Invalid summary response:', data);
+        throw new Error('Invalid response from summary service');
+      }
+      
       console.log("✅ Summary generated:", data.completion.substring(0, 50) + "...");
       
       // Cache the result for 24 hours

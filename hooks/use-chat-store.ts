@@ -75,8 +75,12 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     setMessages(prev => [...prev, userMessage, typingMessage]);
     setIsLoading(true);
 
-    try {
-      const systemPrompt = `You are an AI assistant for Scribe AI, a voice transcription and note-taking app. 
+    // Retry logic for API calls
+    const makeAPIRequest = async (attempt: number = 1): Promise<string> => {
+      const maxRetries = 3;
+      
+      try {
+        const systemPrompt = `You are an AI assistant for Scribe AI, a voice transcription and note-taking app. 
 
 ${contextData ? `User's current data:
 - Total notes: ${contextData.totalNotes || 0}
@@ -93,32 +97,55 @@ ${contextData.recentNotes || 'No recent notes'}
 
 Be helpful, concise, and friendly. If asked about specific notes, reference the data provided above.`;
 
-      const apiMessages = [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: text.trim(),
-        },
-      ];
+        const apiMessages = [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: text.trim(),
+          },
+        ];
 
-      const response = await fetch('https://toolkit.rork.com/text/llm/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ messages: apiMessages }),
-        signal: AbortSignal.timeout(30000),
-      });
+        const response = await fetch('https://toolkit.rork.com/text/llm/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ messages: apiMessages }),
+          signal: AbortSignal.timeout(30000),
+        });
 
-      if (!response.ok) {
-        throw new Error(`AI request failed: ${response.status}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('AI API Error Response:', errorText);
+          throw new Error(`AI request failed: ${response.status} - ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data || !data.completion) {
+          console.error('Invalid API response:', data);
+          throw new Error('Invalid response from AI service');
+        }
+        
+        return data.completion.trim();
+      } catch (error) {
+        console.error(`Chat API attempt ${attempt} failed:`, error);
+        
+        if (attempt < maxRetries && error instanceof Error && error.message.includes('500')) {
+          console.log(`Retrying chat request (attempt ${attempt + 1}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+          return makeAPIRequest(attempt + 1);
+        }
+        
+        throw error;
       }
+    };
 
-      const data = await response.json();
-      const aiResponse = data.completion.trim();
+    try {
+      const aiResponse = await makeAPIRequest();
 
       // Remove typing indicator and add AI response
       setMessages(prev => {
@@ -138,13 +165,26 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
       setUnreadCount(prev => prev + 1);
     } catch (error) {
       console.error('Chat error:', error);
+      
+      let errorMessage = "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('500')) {
+          errorMessage = "The AI service is temporarily unavailable. Please try again in a few minutes.";
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "The request timed out. Please try again with a shorter message.";
+        } else if (error.message.includes('network')) {
+          errorMessage = "Network connection issue. Please check your internet connection and try again.";
+        }
+      }
+      
       setMessages(prev => {
         const withoutTyping = prev.filter(msg => !msg.isTyping);
         return [
           ...withoutTyping,
           {
             id: Date.now().toString(),
-            text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
+            text: errorMessage,
             isUser: false,
             timestamp: new Date(),
           },
