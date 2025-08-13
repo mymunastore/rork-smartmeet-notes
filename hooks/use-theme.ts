@@ -58,10 +58,10 @@ const generateColorScheme = (scheme: ColorScheme, baseColors: typeof Colors.ligh
 };
 
 export const [ThemeProvider, useTheme] = createContextHook(() => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>('default');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isDark, setIsDark] = useState<boolean>(false);
+  const [isDark, setIsDark] = useState<boolean>(true);
 
   // Load saved preferences
   useEffect(() => {

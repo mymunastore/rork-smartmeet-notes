@@ -3,6 +3,7 @@ import createContextHook from "@nkzw/create-context-hook";
 import { useEffect, useState, useCallback } from "react";
 import { UserProfile, UserPreferences, DEFAULT_USER_PREFERENCES } from "@/types/user";
 import { Platform } from "react-native";
+import { useTheme } from "@/hooks/use-theme";
 
 const USER_PROFILE_KEY = "scribe-user-profile";
 const USER_PREFERENCES_KEY = "scribe-user-preferences";
@@ -25,6 +26,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
+  const { setThemeMode } = useTheme();
 
   const loadUserProfile = useCallback(async () => {
     try {
@@ -55,13 +57,19 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
       const storedPreferences = await safeStorage.getItem(USER_PREFERENCES_KEY);
       
       if (storedPreferences) {
-        const parsedPreferences = JSON.parse(storedPreferences);
-        setPreferences({ ...DEFAULT_USER_PREFERENCES, ...parsedPreferences });
+        const parsedPreferences = JSON.parse(storedPreferences) as Partial<UserPreferences>;
+        const merged = { ...DEFAULT_USER_PREFERENCES, ...parsedPreferences } as UserPreferences;
+        setPreferences(merged);
+        if (merged.theme) {
+          await setThemeMode(merged.theme);
+        }
+      } else {
+        await setThemeMode(DEFAULT_USER_PREFERENCES.theme);
       }
     } catch (error) {
       console.error("Failed to load user preferences:", error);
     }
-  }, []);
+  }, [setThemeMode]);
 
   useEffect(() => {
     loadUserProfile();
@@ -89,17 +97,21 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
 
   const updatePreferences = useCallback(async (updates: Partial<UserPreferences>) => {
     try {
-      const updatedPreferences = {
+      const updatedPreferences: UserPreferences = {
         ...preferences,
         ...updates,
-      };
+      } as UserPreferences;
 
       setPreferences(updatedPreferences);
       await safeStorage.setItem(USER_PREFERENCES_KEY, JSON.stringify(updatedPreferences));
 
+      if (updates.theme) {
+        await setThemeMode(updates.theme);
+      }
+
       // Also update the user profile with new preferences
       if (userProfile) {
-        const updatedProfile = {
+        const updatedProfile: UserProfile = {
           ...userProfile,
           preferences: updatedPreferences,
           updatedAt: new Date().toISOString(),
@@ -112,7 +124,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
     } catch (error) {
       console.error("Failed to update user preferences:", error);
     }
-  }, [preferences, userProfile]);
+  }, [preferences, userProfile, setThemeMode]);
 
   const uploadProfilePicture = useCallback(async (imageUri: string) => {
     // In a real app, you would upload to a server
