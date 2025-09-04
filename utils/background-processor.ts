@@ -114,11 +114,25 @@ class BackgroundProcessor {
     } catch (error) {
       console.error(`Failed to process note ${note.id}:`, error);
       
+      // Create a more user-friendly error message
+      let errorMessage = "Processing failed";
+      if (error instanceof Error) {
+        if (error.message.includes('base64')) {
+          errorMessage = "Invalid audio data format";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network connection error";
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Processing timeout - please try again";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       // Update note with error state
       const errorNote = {
         ...note,
         isProcessing: false,
-        processingError: error instanceof Error ? error.message : "Processing failed",
+        processingError: errorMessage,
       };
       
       try {

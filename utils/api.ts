@@ -2,6 +2,27 @@ import { Platform } from "react-native";
 import cacheManager from './cache-manager';
 import performanceMonitor from './performance-monitor';
 
+// Safe base64 encoding function that handles invalid characters
+function safeBase64Encode(str: string): string {
+  try {
+    // First, encode the string to handle special characters
+    const encoded = encodeURIComponent(str);
+    // Then create a simple hash using character codes
+    let hash = 0;
+    for (let i = 0; i < encoded.length; i++) {
+      const char = encoded.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Return a safe string representation
+    return Math.abs(hash).toString(36).substring(0, 32);
+  } catch (error) {
+    console.warn('Failed to create hash, using fallback:', error);
+    // Fallback: use timestamp and random number
+    return `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  }
+}
+
 // Retry configuration
 interface RetryConfig {
   maxRetries: number;
@@ -57,7 +78,7 @@ export async function translateText(
   fromLanguage: string,
   toLanguage: string = 'en'
 ): Promise<string> {
-  const cacheKey = `translation_${btoa(text).slice(0, 32)}_${fromLanguage}_${toLanguage}`;
+  const cacheKey = `translation_${safeBase64Encode(text)}_${fromLanguage}_${toLanguage}`;
   
   // Check cache first
   const cached = await cacheManager.get<string>(cacheKey);
@@ -286,7 +307,7 @@ export async function generateSummary(
   language?: string
 ): Promise<string> {
   // Create cache key based on transcript hash and language
-  const transcriptHash = btoa(transcript).slice(0, 32); // Simple hash
+  const transcriptHash = safeBase64Encode(transcript);
   const cacheKey = `summary_${transcriptHash}_${language || 'auto'}`;
   
   // Check cache first
