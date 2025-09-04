@@ -129,8 +129,11 @@ export default function ChatScreen() {
           { opacity: index === messages.length - 1 ? fadeAnim : 1 },
         ]}
       >
-        <View style={styles.messageHeader}>
-          <View style={[styles.messageIcon, { backgroundColor: `${item.isUser ? colors.primary : colors.nature.sage}1A` }]}>
+        <View style={[
+          styles.messageHeader,
+          item.isUser ? styles.userMessageHeader : styles.aiMessageHeader,
+        ]}>
+          <View style={[styles.messageIcon, { backgroundColor: item.isUser ? colors.primary + '20' : colors.nature.sage + '20' }]}>
             {item.isUser ? (
               <User size={16} color={colors.primary} />
             ) : (
@@ -140,13 +143,16 @@ export default function ChatScreen() {
           <Text style={[styles.messageSender, { color: colors.text }]}>
             {item.isUser ? 'You' : 'AI Assistant'}
           </Text>
-          <Text style={[styles.messageTime, { color: colors.gray[400] }]}>
+          <Text style={[styles.messageTime, { color: colors.gray[500] }]}>
             {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
         </View>
         
         {item.isTyping ? (
-          <View style={styles.typingContainer}>
+          <View style={[
+            styles.typingContainer,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}>
             <ActivityIndicator size="small" color={colors.nature.sage} />
             <Text style={[styles.typingText, { color: colors.gray[500] }]}>AI is thinking...</Text>
           </View>
@@ -154,11 +160,13 @@ export default function ChatScreen() {
           <>
             <View style={[
               styles.messageBubble,
-              item.isUser ? { ...styles.userBubble, backgroundColor: colors.primary } : { ...styles.aiBubble, backgroundColor: colors.card, shadowColor: colors.gray[300] },
+              item.isUser 
+                ? { ...styles.userBubble, backgroundColor: colors.primary }
+                : { ...styles.aiBubble, backgroundColor: colors.card, borderColor: colors.border },
             ]}>
               <Text style={[
                 styles.messageText,
-                item.isUser ? styles.userText : { color: colors.text },
+                { color: item.isUser ? '#FFFFFF' : colors.text },
               ]}>
                 {item.text}
               </Text>
@@ -167,19 +175,19 @@ export default function ChatScreen() {
             {!item.isUser && (
               <View style={styles.messageActions}>
                 <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: `${colors.gray[500]}1A` }]}
+                  style={[styles.actionButton, { backgroundColor: colors.gray[200] }]}
                   onPress={() => copyMessage(item.text)}
                 >
-                  <Copy size={14} color={colors.gray[500]} />
+                  <Copy size={14} color={colors.gray[600]} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: `${colors.gray[500]}1A` }]}
+                  style={[styles.actionButton, { backgroundColor: colors.gray[200] }]}
                   onPress={() => speakMessage(item.text)}
                 >
                   {isSpeaking ? (
                     <VolumeX size={14} color={colors.nature.coral} />
                   ) : (
-                    <Volume2 size={14} color={colors.gray[500]} />
+                    <Volume2 size={14} color={colors.gray[600]} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -348,7 +356,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   messageContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
+    width: '100%',
   },
   userMessageContainer: {
     alignItems: 'flex-end',
@@ -361,6 +370,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     gap: 8,
+    width: '100%',
+  },
+  userMessageHeader: {
+    justifyContent: 'flex-end',
+  },
+  aiMessageHeader: {
+    justifyContent: 'flex-start',
   },
   messageIcon: {
     width: 24,
@@ -375,19 +391,23 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: 11,
-    marginLeft: 'auto',
+    marginLeft: 8,
   },
   messageBubble: {
-    maxWidth: '85%',
+    maxWidth: '80%',
+    minWidth: 60,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 16,
+    borderRadius: 18,
   },
   userBubble: {
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 6,
+    alignSelf: 'flex-end',
   },
   aiBubble: {
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -395,18 +415,19 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  userText: {
-    color: '#fff',
-  },
-
   typingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    borderRadius: 18,
+    borderBottomLeftRadius: 6,
+    borderWidth: 1,
+    maxWidth: '80%',
+    alignSelf: 'flex-start',
   },
   typingText: {
     fontSize: 14,
@@ -416,17 +437,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 8,
     gap: 8,
+    alignSelf: 'flex-start',
   },
   actionButton: {
-    padding: 6,
-    borderRadius: 6,
+    padding: 8,
+    borderRadius: 8,
   },
   inputContainer: {
     borderTopWidth: 1,
+    paddingBottom: 0,
   },
   inputGradient: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   inputRow: {
     flexDirection: 'row',
@@ -435,27 +458,28 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
+    minHeight: 44,
+    maxHeight: 120,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingVertical: 12,
+    borderRadius: 22,
     borderWidth: 1,
-    fontSize: 15,
+    fontSize: 16,
     textAlignVertical: 'top',
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
   },
   sendButtonDisabled: {
     opacity: 0.5,
   },
   sendButtonGradient: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
