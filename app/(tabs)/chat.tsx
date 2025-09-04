@@ -22,6 +22,7 @@ import {
   Copy,
   Volume2,
   VolumeX,
+  AlertCircle,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,6 +38,7 @@ export default function ChatScreen() {
   const { getChatContextData } = useChatContext();
   const [inputText, setInputText] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [hasError, setHasError] = useState<boolean>(false);
   const flatListRef = useRef<FlatList>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -55,6 +57,7 @@ export default function ChatScreen() {
 
     const messageText = inputText.trim();
     setInputText('');
+    setHasError(false);
 
     // Animate new message
     Animated.timing(fadeAnim, {
@@ -63,7 +66,17 @@ export default function ChatScreen() {
       useNativeDriver: true,
     }).start();
 
-    await sendMessage(messageText, contextData);
+    try {
+      await sendMessage(messageText, contextData);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setHasError(true);
+      Alert.alert(
+        'Message Failed',
+        'Failed to send your message. Please check your connection and try again.',
+        [{ text: 'OK', onPress: () => setHasError(false) }]
+      );
+    }
   }, [inputText, isLoading, contextData, fadeAnim, sendMessage]);
 
   const handleClearChat = useCallback(() => {
@@ -207,17 +220,38 @@ export default function ChatScreen() {
       </LinearGradient>
 
       {/* Messages */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={keyExtractor}
-        renderItem={renderMessage}
-        style={styles.messagesList}
-        contentContainerStyle={styles.messagesContent}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
-        showsVerticalScrollIndicator={false}
-      />
+      {messages.length === 0 ? (
+        <View style={styles.emptyState}>
+          <View style={[styles.emptyIcon, { backgroundColor: `${colors.nature.sage}1A` }]}>
+            <Sparkles size={32} color={colors.nature.sage} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Welcome to AI Assistant</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.gray[500] }]}>
+            Ask me anything about your notes, transcriptions, or how to use the app!
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={keyExtractor}
+          renderItem={renderMessage}
+          style={styles.messagesList}
+          contentContainerStyle={styles.messagesContent}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+      
+      {hasError && (
+        <View style={[styles.errorBanner, { backgroundColor: `${colors.error}1A`, borderColor: colors.error }]}>
+          <AlertCircle size={16} color={colors.error} />
+          <Text style={[styles.errorText, { color: colors.error }]}>
+            Connection issue. Please check your internet and try again.
+          </Text>
+        </View>
+      )}
 
       {/* Input */}
       <View style={[styles.inputContainer, { borderTopColor: colors.border }]}>
@@ -424,5 +458,45 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    flex: 1,
   },
 });

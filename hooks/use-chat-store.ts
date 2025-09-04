@@ -111,7 +111,7 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
         // Create timeout controller for cross-platform compatibility
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-          console.log('Request timeout after 30 seconds');
+          console.log('Chat request timeout after 30 seconds');
           controller.abort();
         }, 30000);
         
@@ -127,8 +127,8 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('AI API Error Response:', errorText);
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error('AI API Error Response:', response.status, response.statusText, errorText);
           throw new Error(`AI request failed: ${response.status} - ${response.statusText}`);
         }
 
@@ -146,12 +146,12 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
         // Handle different types of errors
         if (error instanceof Error) {
           // Don't retry on abort errors (timeout)
-          if (error.name === 'AbortError') {
+          if (error.name === 'AbortError' || error.message.includes('aborted')) {
             throw new Error('Request timed out. Please try again with a shorter message.');
           }
           
           // Retry on server errors
-          if (attempt < maxRetries && (error.message.includes('500') || error.message.includes('502') || error.message.includes('503'))) {
+          if (attempt < maxRetries && (error.message.includes('500') || error.message.includes('502') || error.message.includes('503') || error.message.includes('Network request failed'))) {
             console.log(`Retrying chat request (attempt ${attempt + 1}/${maxRetries})...`);
             await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
             return makeAPIRequest(attempt + 1);
@@ -189,9 +189,9 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
       if (error instanceof Error) {
         if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) {
           errorMessage = "The AI service is temporarily unavailable. Please try again in a few minutes.";
-        } else if (error.message.includes('timeout') || error.name === 'AbortError') {
+        } else if (error.message.includes('timeout') || error.name === 'AbortError' || error.message.includes('aborted')) {
           errorMessage = "The request timed out. Please try again with a shorter message.";
-        } else if (error.message.includes('network') || error.message.includes('Failed to fetch')) {
+        } else if (error.message.includes('network') || error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
           errorMessage = "Network connection issue. Please check your internet connection and try again.";
         } else if (error.message.includes('400')) {
           errorMessage = "Invalid request. Please try rephrasing your message.";
