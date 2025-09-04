@@ -110,10 +110,22 @@ Be helpful, concise, and friendly. If asked about specific notes, reference the 
 
         // Create timeout controller for cross-platform compatibility
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.log('Chat request timeout after 30 seconds');
-          controller.abort();
-        }, 30000);
+        let timeoutId: NodeJS.Timeout | number;
+        
+        // Use platform-specific timeout implementation
+        if (typeof window !== 'undefined') {
+          // Web environment
+          timeoutId = window.setTimeout(() => {
+            console.log('Chat request timeout after 30 seconds');
+            controller.abort();
+          }, 30000);
+        } else {
+          // React Native environment
+          timeoutId = setTimeout(() => {
+            console.log('Chat request timeout after 30 seconds');
+            controller.abort();
+          }, 30000);
+        }
         
         const response = await fetch('https://toolkit.rork.com/text/llm/', {
           method: 'POST',
