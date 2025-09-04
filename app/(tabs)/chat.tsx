@@ -32,7 +32,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { notes, completedNotes } = useNotes();
   const { messages, isLoading, sendMessage, clearChat, markAsRead } = useChat();
   const { getChatContextData } = useChatContext();
@@ -41,6 +41,17 @@ export default function ChatScreen() {
   const [hasError, setHasError] = useState<boolean>(false);
   const flatListRef = useRef<FlatList>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🎨 Chat Screen Theme Debug:', {
+      isDark,
+      colorsBackground: colors.background,
+      colorsText: colors.text,
+      colorsCard: colors.card,
+      messageCount: messages.length
+    });
+  }, [isDark, colors, messages.length]);
 
   // Mark messages as read when screen is focused
   React.useEffect(() => {
@@ -133,7 +144,7 @@ export default function ChatScreen() {
           styles.messageHeader,
           item.isUser ? styles.userMessageHeader : styles.aiMessageHeader,
         ]}>
-          <View style={[styles.messageIcon, { backgroundColor: item.isUser ? colors.primary + '20' : colors.nature.sage + '20' }]}>
+          <View style={[styles.messageIcon, { backgroundColor: item.isUser ? `${colors.primary}20` : `${colors.nature.sage}20` }]}>
             {item.isUser ? (
               <User size={16} color={colors.primary} />
             ) : (

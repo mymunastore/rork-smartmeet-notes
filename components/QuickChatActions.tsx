@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MessageCircle, Sparkles, HelpCircle, Lightbulb } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
-import Colors from '@/constants/colors';
+import { useTheme } from '@/hooks/use-theme';
 import { useChat } from '@/hooks/use-chat-store';
 import { Note } from '@/types/note';
 
@@ -20,6 +20,7 @@ interface QuickChatActionsProps {
 
 export default function QuickChatActions({ note, style }: QuickChatActionsProps) {
   const router = useRouter();
+  const { colors } = useTheme();
   const { addSystemMessage } = useChat();
 
   const askAboutNote = () => {
@@ -48,15 +49,15 @@ export default function QuickChatActions({ note, style }: QuickChatActionsProps)
   };
 
   return (
-    <View style={[styles.container, style]}>
-      <Text style={styles.title}>🤖 AI Assistant</Text>
-      <Text style={styles.subtitle}>Get instant help and insights</Text>
+    <View style={[styles.container, { backgroundColor: colors.card, shadowColor: colors.text }, style]}>
+      <Text style={[styles.title, { color: colors.text }]}>🤖 AI Assistant</Text>
+      <Text style={[styles.subtitle, { color: colors.gray[500] }]}>Get instant help and insights</Text>
       
       <View style={styles.actionsGrid}>
         {note && (
           <TouchableOpacity style={styles.actionButton} onPress={askAboutNote}>
             <LinearGradient
-              colors={[Colors.light.primary, Colors.light.secondary]}
+              colors={[colors.primary, colors.secondary]}
               style={styles.gradientButton}
             >
               <MessageCircle size={20} color="white" />
@@ -67,7 +68,7 @@ export default function QuickChatActions({ note, style }: QuickChatActionsProps)
         
         <TouchableOpacity style={styles.actionButton} onPress={getSuggestions}>
           <LinearGradient
-            colors={[Colors.light.accent, Colors.light.primary]}
+            colors={[colors.accent, colors.primary]}
             style={styles.gradientButton}
           >
             <Lightbulb size={20} color="white" />
@@ -77,7 +78,7 @@ export default function QuickChatActions({ note, style }: QuickChatActionsProps)
         
         <TouchableOpacity style={styles.actionButton} onPress={getHelp}>
           <LinearGradient
-            colors={[Colors.light.secondary, Colors.light.accent]}
+            colors={[colors.secondary, colors.accent]}
             style={styles.gradientButton}
           >
             <HelpCircle size={20} color="white" />
@@ -87,7 +88,7 @@ export default function QuickChatActions({ note, style }: QuickChatActionsProps)
         
         <TouchableOpacity style={styles.actionButton} onPress={openChat}>
           <LinearGradient
-            colors={[Colors.light.primary, Colors.light.accent]}
+            colors={[colors.primary, colors.accent]}
             style={styles.gradientButton}
           >
             <Sparkles size={20} color="white" />
@@ -101,11 +102,9 @@ export default function QuickChatActions({ note, style }: QuickChatActionsProps)
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 16,
     padding: 20,
     margin: 16,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -116,14 +115,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.light.text,
+    fontWeight: 'bold' as const,
     marginBottom: 4,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
-    color: Colors.light.gray[600],
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -149,6 +146,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 });

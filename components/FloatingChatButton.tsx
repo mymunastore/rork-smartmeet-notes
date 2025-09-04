@@ -96,10 +96,10 @@ export default function FloatingChatButton({ onPress, style }: FloatingChatButto
       ]}
     >
       {isExpanded && (
-        <Animated.View style={styles.tooltip}>
+        <Animated.View style={[styles.tooltip, { shadowColor: colors.text }]}>
           <LinearGradient
             colors={[`${colors.background}F2`, `${colors.background}FA`]}
-            style={styles.tooltipGradient}
+            style={[styles.tooltipGradient, { borderColor: colors.border }]}
           >
             <View style={styles.tooltipContent}>
               <Sparkles size={16} color={colors.nature.sage} />
